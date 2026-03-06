@@ -1,0 +1,47 @@
+{
+    "cmake.configureOnOpen": true,
+    "cmake.buildDirectory": "${workspaceFolder}/build",
+    "cmake.installPrefix": "${workspaceFolder}/build",
+    "cmake.sourceDirectory": "${workspaceFolder}",
+    "cmake.generator": "MinGW Makefiles",
+    "cmake.buildBeforeRun": true,
+    "cmake.clearOutputBeforeBuild": true,
+    "cmake.configureSettings": {
+        "CMAKE_TOOLCHAIN_FILE": "",
+        "CMAKE_C_COMPILER": "arm-none-eabi-gcc",
+        "CMAKE_CXX_COMPILER": "arm-none-eabi-g++",
+        "CMAKE_ASM_COMPILER": "arm-none-eabi-gcc",
+        "CMAKE_OBJCOPY": "arm-none-eabi-objcopy",
+        "CMAKE_OBJDUMP": "arm-none-eabi-objdump",
+        "CMAKE_SIZE": "arm-none-eabi-size",
+        "CMAKE_AR": "arm-none-eabi-ar"
+    },
+    "cmake.configureArgs": [
+        "-DCMAKE_COMMAND=cube-cmake"
+    ],
+    "cmake.buildArgs": [
+        "-j4"
+    ],
+    "cmake.cmakePath": "cube-cmake",
+    "cmake.preferredGenerators": [
+        "Ninja"
+    ],
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools",
+    "files.associations": {
+        "*.h": "c",
+        "*.c": "c",
+        "*.cpp": "cpp",
+        "*.hpp": "cpp",
+        "*.s": "assembly",
+        "*.ld": "linkerscript"
+    },
+    "C_Cpp.intelliSenseEngine": "default",
+    "C_Cpp.autocomplete": "default",
+    "C_Cpp.errorSquiggles": "enabled",
+    "stm32cube-ide-clangd.path": "cube",
+    "stm32cube-ide-clangd.arguments": [
+        "starm-clangd",
+        "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gcc.exe",
+        "--query-driver=${env:CUBE_BUNDLE_PATH}/gnu-tools-for-stm32/14.3.1+st.2/bin/arm-none-eabi-g++.exe"
+    ]
+}
