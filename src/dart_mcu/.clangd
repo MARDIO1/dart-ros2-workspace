@@ -9,3 +9,10 @@ Diagnostics:
     - unknown_typename
     - unknown_typename_suggest
     - typename_requires_specqual
+Format:
+  IndentWidth: 4
+  UseTab: Never
+  TabWidth: 4
+  BreakBeforeBraces: Allman
+  ColumnLimit: 80
+  IndentCaseLabels: true

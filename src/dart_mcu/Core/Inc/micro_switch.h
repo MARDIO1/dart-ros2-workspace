@@ -14,7 +14,8 @@
 #define Trigger_Switch_GPIO_Port GPIOA
 #define Trigger_Switch_Pin GPIO_PIN_2
 
-enum E_Lead_Screw_Switch_State {
+enum E_Lead_Screw_Switch_State
+{
     Untriggered,
     Triggered
 };
@@ -24,4 +25,4 @@ extern E_Lead_Screw_Switch_State trigger_switch_state;
 
 void micro_switch_read();
 
-#endif //DART_MCU_MICRO_SWITCH_H
+#endif // DART_MCU_MICRO_SWITCH_H
