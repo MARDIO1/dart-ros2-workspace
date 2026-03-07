@@ -1,29 +1,32 @@
 //
 // Created by cheny on 24-9-18.
 //
-
+/*mardio change26.3.7进度全完蛋*/
 #ifndef DART_MCU_DART_CONFIG_H
 #define DART_MCU_DART_CONFIG_H
 
-#include "stdint.h"
 #include "dart_msgs/msg/dart_launcher_params.h"
 #include "dart_msgs/msg/dart_launcher_status.h"
 #include "dart_msgs/msg/green_light.h"
+#include "stdint.h"
 
 // 比赛模式相关
 #define CONFIG_FORCE_WAIT_FOR_GAME_PROGRESS 0
-// 开舱门自瞄时间
+// 开舱门自瞄时间 准备删除
 #define CONFIG_AUTOAIM_TIMEOUT_MS 1000
 
-// 时间相关
+// 时间相关 需要删改
 #define CONFIG_SLIDE_SERVO_SLIDE_TIME 800
 #define CONFIG_SLIDE_SERVO_WAIT_TIME 300
 #define CONFIG_TRIGGER_SERVO_WAIT_TIME 500
 #define CONFIG_LIFT_WAIT_TIME 700
 #define CONFIG_LAUNCH_WAIT_TIME 800
 #define CONFIG_LAUNCH_WAIT_MOTOR_STABLE_TIME 500
+/* 新的装填机制:
+原版发射->滑台到安装位置前方->大摆锤旋转到安装角度->总线舵机工作->滑台移动主动安装镖体->吸盘气阀打开->滑台往后->大摆锤旋转到允许发射角度->原版发射
 
-// 丝杆电机复位堵转速度
+*/
+// 丝杆电机复位堵转速度 应该不用改
 #define CONFIG_TARGET_RESET_VELOCITY_YAWLS -70
 #define CONFIG_TARGET_RESET_VELOCITY_TRIGGERLS -5000
 #define CONFIG_GATE_VELOCITY_TRIGGERLS 500
@@ -41,7 +44,6 @@
 #define CONFIG_LOAD_SERVO_UP_ANGLE_0 190
 #define CONFIG_LOAD_SERVO_UP_ANGLE_1 80
 
-
 // 该角度为升降机在下时左右侧舵机的角度
 #define CONFIG_LOAD_SERVO_DOWN_ANGLE_0 67
 #define CONFIG_LOAD_SERVO_DOWN_ANGLE_1 203
@@ -58,7 +60,6 @@
 #define CONFIG_MOTOR_YAW_ANGLE_MAX 8192
 #define CONFIG_MOTOR_TRIGGER_ANGLE_MAX 8192
 #define CONFIG_MOTOR_LOAD_ANGLE_MAX 8192
-
 
 // 特殊电机角度定义
 #define CONFIG_MOTOR_YAWLS_ANGLE_MIN 10000
@@ -87,4 +88,4 @@ extern dart_msgs__msg__DartLauncherParams msgDartProtocols;
 extern dart_msgs__msg__GreenLight msgGreenLight;
 extern dart_msgs__msg__DartLauncherStatus msgDartStatus;
 
-#endif //DART_MCU_DART_CONFIG_H
+#endif // DART_MCU_DART_CONFIG_H

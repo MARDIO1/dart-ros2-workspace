@@ -8,30 +8,31 @@
 #include "pwm.h"
 class servo {
 private:
-    PWM pwm_;
+  PWM pwm_;
+
 public:
-    uint32_t minPulseWidth_;
-    uint32_t maxPulseWidth_;
-    uint16_t minAngle_; // 单位：度
-    uint16_t maxAngle_; // 单位：度
+  uint32_t minPulseWidth_;
+  uint32_t maxPulseWidth_;
+  uint16_t minAngle_; // 单位：度
+  uint16_t maxAngle_; // 单位：度
 
-    servo() = default;
+  servo() = default;
 
-    void begin(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t timerClock, uint32_t minPulseWidth,
-               uint32_t maxPulseWidth, uint16_t minAngle, uint16_t maxAngle, uint32_t pwm_period,
-               uint32_t pwm_frequency, uint16_t initialAngle = 0);
+  void begin(TIM_HandleTypeDef *htim, uint32_t channel, uint32_t timerClock,
+             uint32_t minPulseWidth, uint32_t maxPulseWidth, uint16_t minAngle,
+             uint16_t maxAngle, uint32_t pwm_period, uint32_t pwm_frequency,
+             uint16_t initialAngle = 0);
 
-    void setAngle(uint16_t angle);
+  void setAngle(uint16_t angle);
 
-    void enable();
+  void enable();
 
-    void disable();
+  void disable();
 
 private:
-    inline uint32_t calCompareValue(uint16_t angle);
+  inline uint32_t calCompareValue(uint16_t angle);
 };
 
-extern servo trigger_servo[7];
+extern servo trigger_servo[8]; // 添加一个舵机，而没有删除老的
 
-
-#endif //DART_MCU_SERVO_H
+#endif // DART_MCU_SERVO_H
