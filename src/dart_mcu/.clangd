@@ -2,6 +2,7 @@ CompileFlags:
   Add:
     - '-ferror-limit=0'
     - '-Wno-implicit-int'
+    - '-Wno-unknown-argument'
   CompilationDatabase: build
 Diagnostics:
   Suppress:
@@ -10,6 +11,7 @@ Diagnostics:
     - unknown_typename_suggest
     - typename_requires_specqual
 Format:
+  Style: file
   IndentWidth: 4
   UseTab: Never
   TabWidth: 4
