@@ -63,6 +63,10 @@ add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F427xx)
 
 file(GLOB_RECURSE SOURCES "Core/*.*" "Middlewares/*.*" "Drivers/*.*" "USB_DEVICE/*.*")
 
+# CubeMX may regenerate `Core/Src/main.c`; this project uses `Core/Src/main.cpp`.
+# Exclude `main.c` to avoid duplicate symbols (main/Error_Handler/HAL callbacks).
+list(FILTER SOURCES EXCLUDE REGEX ".*/Core/Src/main\\.c$")
+
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F427IIHX_FLASH.ld)
 
 add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
