@@ -80,6 +80,19 @@ public:
   int16_t updateCurrent();
 };
 
+class motor_dm{
+  // 初始化CAN发送函数（只调用一次）
+  void init(){
+  DM_Set_CAN_Send_Function(my_can_send);
+
+  // 创建电机对象
+  motor_t dm4310_motor = {.type = MOTOR_DM4310,
+                          .id = 0x01, // 电机ID
+                          .Reductionratio = MOTORDM4310_Reductionratio};
+  // 打开电机
+  DM_motorOpen(dm4310_motor.id, 1); // CAN_ID = 1
+  }
+}
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机
 extern motor_rm MotorYawLS;     // 偏航丝杆电机
 extern motor_rm MotorLoad[2];   // 装填电机

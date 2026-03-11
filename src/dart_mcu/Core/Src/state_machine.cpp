@@ -691,9 +691,13 @@ public:
     // 响应遥控器指令
     if (RC_Data.Switch_Left == RC_SW_UP) {
       // 调试内容写在这里
+      
       // 摇杆ch0旋转4310电机
+
       // 摇杆ch1控制舵机
+
       // 摇杆ch2ch3控制三个气泵
+
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
       fsm.custom<Dart_FSM>()->launch_operating_ = false;
       // 扳机锁定在初始位置，不可触发操作，可以操作Yaw、Load电机和扳机丝杆
