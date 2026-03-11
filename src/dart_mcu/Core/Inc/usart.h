@@ -22,20 +22,19 @@
 #define __USART_H__
 
 #ifdef __cplusplus
-extern "C"
-{
+extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
-    /* USER CODE BEGIN Includes */
+/* USER CODE BEGIN Includes */
 
-    /* USER CODE END Includes */
+/* USER CODE END Includes */
 
-    extern UART_HandleTypeDef huart1;
+extern UART_HandleTypeDef huart1;
 
-    extern UART_HandleTypeDef huart3;
+extern UART_HandleTypeDef huart3;
 
 /* USER CODE BEGIN Private defines */
 #define UART1_MAX_RECEIVE_BUFFER_LENGTH 50
@@ -52,17 +51,18 @@ extern "C"
 #define REFEREE_UART_RXBUFFER judge_rx_buffer
 #define REFEREE_UART_BUFFER_LENGTH UART3_MAX_RECEIVE_BUFFER_LENGTH
 
-    /* USER CODE END Private defines */
+/* USER CODE END Private defines */
 
-    void MX_USART1_UART_Init(void);
-    void MX_USART3_UART_Init(void);
+void MX_USART1_UART_Init(void);
+void MX_USART3_UART_Init(void);
 
-    /* USER CODE BEGIN Prototypes */
+/* USER CODE BEGIN Prototypes */
     extern uint8_t uart1RecBuffer[UART1_MAX_RECEIVE_BUFFER_LENGTH];
-    /* USER CODE END Prototypes */
+/* USER CODE END Prototypes */
 
 #ifdef __cplusplus
 }
 #endif
 
 #endif /* __USART_H__ */
+
