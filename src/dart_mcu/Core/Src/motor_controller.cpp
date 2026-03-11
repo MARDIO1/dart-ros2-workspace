@@ -161,6 +161,12 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
     motor::MotorLoad[1].create(16384, motor::E_MotorType::M3508, 3,
                                true); // 装填电机2
 
+    // DM4310 初始化：与其他电机一同创建并发送一次性位置/速度命令以确认动作
+    // 创建 DM4310 wrapper（内部会调用 DM_Set_CAN_Send_Function）
+    motor::MotorDM4310.create(1);
+    // 打开电机并发送一次位置/速度命令（Motor_ID=1, CAN_ID=1, pos=1.0 rad, vel=0.1 rad/s）
+    //DM_speedpositionControl(1, 1, 1.0f, 0.1f);
+
     // Wait for Motor to Connect
     while (
         motor::MotorYawLS.motor_state_ == motor::E_MotorState::DISCONNECTED ||

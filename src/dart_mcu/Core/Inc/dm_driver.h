@@ -3,6 +3,10 @@
 
 #include "shit_motor_types.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // 宏定义
 #define DMJ_STDID 0x00                // MIT
 #define MOTORDM4310_Reductionratio 10 // DM4310减速比
@@ -43,5 +47,9 @@ void DM_motorZeroSet(uint8_t Motor_ID, uint8_t CAN_ID);
 
 // 反馈处理函数
 void DM_infoHandle(motor_t *mot, uint8_t *Data);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif // __DM_DRIVER_H__

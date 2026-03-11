@@ -3,11 +3,33 @@
 //
 
 #include "motor.h"
+#include "dm_driver.h"  // DM4310 support
+
+// callback stub required by motor_dm (simple CAN1 transmit)
+void motor::motor_dm::my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]) {
+    CAN_TxHeaderTypeDef TxHeader;
+    uint32_t TxMailbox;
+    
+    TxHeader.StdId = stdid;
+    TxHeader.ExtId = 0;
+    TxHeader.IDE = CAN_ID_STD;
+    TxHeader.RTR = CAN_RTR_DATA;
+    TxHeader.DLC = 8;
+    TxHeader.TransmitGlobalTime = DISABLE;
+    
+    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, data, &TxMailbox);
+}
+
+  // global DM driver struct removed; motor_dm now owns its own motor_t member (info_)
 
 namespace motor {
+// RM motor instances
 motor_rm MotorTriggerLS; // 扳机丝杆电机
 motor_rm MotorYawLS;     // 偏航丝杆电机
 motor_rm MotorLoad[2];   // 装填电机
+
+// DM motor wrapper instance (if needed by user code)
+motor_dm MotorDM4310;
 
 void update_can_array(uint8_t *aData, uint8_t id, int16_t output) {
   aData[id * 2] = (uint8_t)(output >> 8);
@@ -36,8 +58,6 @@ bool motor_rm::setNextState(motor::E_MotorState state) {
   } else
     return false;
 }
-
-void motor_rm::resetRound() { current_round_ = 0; }
 
 void motor_rm::decodeCanMsg(CAN_RxHeaderTypeDef *rxHeader,
                             const uint8_t *rxData) {

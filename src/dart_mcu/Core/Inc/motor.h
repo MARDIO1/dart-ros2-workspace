@@ -9,6 +9,9 @@
 #include "can.h"
 #include "inttypes.h"
 #include "task.h"
+#include "dm_driver.h"  // needed for DM4310 types and functions
+
+// DM driver struct is encapsulated inside `motor_dm` instances
 
 namespace motor {
 
@@ -17,9 +20,8 @@ enum E_MotorState { IDLE, RUNNING, DISCONNECTED, UNDEFINED };
 enum E_MotorType { M2006, M3508, GM6020, DM4310 };
 
 void update_can_array(uint8_t *aData, uint8_t id, int16_t output);
-/*class motor_dm{
 
-}*/
+// brushless RM series motor implementation
 class motor_rm {
 public:
   // Current
@@ -73,28 +75,67 @@ public:
 
   bool setNextState(E_MotorState state);
 
-  void resetRound();
+  void resetRound() { current_round_ = 0; }
 
   bool setCurrent(int16_t target_current);
 
   int16_t updateCurrent();
 };
 
-class motor_dm{
-  // 初始化CAN发送函数（只调用一次）
-  void init(){
-  DM_Set_CAN_Send_Function(my_can_send);
+// DM4310-specific motor wrapper
+class motor_dm {
+public:
+    motor_dm() { initDriver(); }
 
-  // 创建电机对象
-  motor_t dm4310_motor = {.type = MOTOR_DM4310,
-                          .id = 0x01, // 电机ID
-                          .Reductionratio = MOTORDM4310_Reductionratio};
-  // 打开电机
-  DM_motorOpen(dm4310_motor.id, 1); // CAN_ID = 1
-  }
-}
+    void create(uint8_t motor_id) {
+        // set up struct and open CAN
+        info_.type = MOTOR_DM4310;
+        info_.id = motor_id;
+        info_.Reductionratio = MOTORDM4310_Reductionratio;
+        DM_motorOpen(motor_id, 1);
+    }
+
+    void decodeCanMsg(const uint8_t *rxData) {
+        // feed raw bytes into the internal driver struct
+        DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));
+    }
+
+    void setNextState(E_MotorState state) {
+        // if you need state tracking, add it here
+        (void)state;
+    }
+
+    void setCurrent(int16_t target_current) {
+        // not used by DM driver
+        (void)target_current;
+    }
+
+    int16_t updateCurrent() {
+        // can convert internal info_ data if desired
+        return 0;
+    }
+
+private:
+    static void initDriver() {
+        static bool inited = false;
+        if (!inited) {
+            DM_Set_CAN_Send_Function(my_can_send);
+            inited = true;
+        }
+    }
+
+    static void my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]);
+    /* per-instance driver information */
+    motor_t info_;
+};
+
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机
 extern motor_rm MotorYawLS;     // 偏航丝杆电机
 extern motor_rm MotorLoad[2];   // 装填电机
-}; // namespace motor
+
+// DM wrapper instance (optional)
+extern motor_dm MotorDM4310;
+
+} // namespace motor
+
 #endif // DART_MCU_MOTOR_H

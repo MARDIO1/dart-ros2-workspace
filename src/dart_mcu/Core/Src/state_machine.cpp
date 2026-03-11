@@ -15,6 +15,7 @@
 #include "judge_receive.h"
 #include "micro_switch.h"
 #include "motor.h"
+#include "dm_driver.h" // DM4310 functions
 #include "motor_controller.h"
 #include "openfsm.h"
 #include "rng.h"
@@ -265,7 +266,7 @@ void FSM::update() {
   if (ext_game_status.game_progress != 0)
     match_flag_ = true;
 }
-
+/*状态机部分*/
 Dart_FSM dart_fsm;
 
 class ActionWaitForAllMotorOnline : public OpenFSMAction {
@@ -292,6 +293,8 @@ public:
     setTriggerServotoReload();
     enableTriggerServo();
     enableSlidedownServo();
+
+    // DM initialization removed from here; it runs with other motor create() calls
 
     msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState();
   }
@@ -546,6 +549,9 @@ public:
     meter::velocity_meter.disable();
     msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState();
     last_sw_left = RC_Data.Switch_Left; // 保存上一次拨轮位置
+
+    // 主动失能仅针对 DM4310：关闭/断开 DM4310 输出（安全起见）
+    DM_motorClose(1, 1);
   }
 
   void update(OpenFSM &fsm) const override {
@@ -638,6 +644,7 @@ bool updateAutoAim(dart_msgs__msg__DartLauncherParams &msgDartParams_,
   }
   return false;
 }
+// (removed redundant DM_fixed_position helper)
 // 调试模式，右拨中，改这里
 class ActionRemote : public OpenFSMAction {
 public:
@@ -689,10 +696,12 @@ public:
     motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
 
     // 响应遥控器指令
-    if (RC_Data.Switch_Left == RC_SW_UP) {
+      if (RC_Data.Switch_Left == RC_SW_UP) {
       // 调试内容写在这里
       
       // 摇杆ch0旋转4310电机
+      // 直接一次性位置控制调用（Motor_ID=1, CAN_ID=1）
+      DM_speedpositionControl(1, 1, 1.0f, 0.1f);
 
       // 摇杆ch1控制舵机
 
