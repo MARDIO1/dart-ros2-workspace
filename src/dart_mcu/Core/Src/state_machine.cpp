@@ -205,7 +205,7 @@ void setNextStateByRemote(bool enterProtectIfDisconnected = true,
 void FSM::update() {
   // 状态机更新
   openFSM_.update();
-  micro_switch_read();
+  micro_switch_read();//读限位开关
 
   // 遥控看门狗
   static TickType_t last_reset_tick = xTaskGetTickCount();
@@ -603,6 +603,9 @@ public:
     enableTriggerServo();
     enableSlidedownServo();
     soundEffectManager.clearSoundEffects();
+
+    //这里，退出保护还要使能DM4310输出
+     DM_motorOpen(1, 1);
   }
 };
 
@@ -701,10 +704,10 @@ public:
       
       // 摇杆ch0旋转4310电机
       // 直接一次性位置控制调用（Motor_ID=1, CAN_ID=1）
-      DM_speedpositionControl(1, 1, 1.0f, 0.1f);
+      //DM_speedpositionControl(1, 1, 1.0f, 0.1f);
 
       // 摇杆ch1控制舵机
-
+        
       // 摇杆ch2ch3控制三个气泵
 
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
