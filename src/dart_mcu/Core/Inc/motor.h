@@ -6,6 +6,7 @@
 #define DART_MCU_MOTOR_H
 
 #include "FreeRTOS.h"
+#include "air_pump.h"
 #include "can.h"
 #include "inttypes.h"
 #include "task.h"
@@ -87,47 +88,47 @@ class motor_dm {
 public:
     motor_dm() { initDriver(); }
 
-    void create(uint8_t motor_id) {
+    void create(uint8_t motor_id, uint8_t can_id) {
         // set up struct and open CAN
         initDriver();
+        motor_id_ = motor_id;
+        can_id_ = can_id;
         info_.type = MOTOR_DM4310;
         info_.id = motor_id;
         info_.Reductionratio = MOTORDM4310_Reductionratio;
-        DM_motorOpen(motor_id, 1);
+        target_vel=0.001f;
+        target_pos_rad=0.0f;
     }
 
-    void decodeCanMsg(const uint8_t *rxData) {
-        // feed raw bytes into the internal driver struct
-        DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));
-    }
+    void open() { DM_motorOpen(motor_id_, can_id_); }
 
-    void setNextState(E_MotorState state) {
-        // if you need state tracking, add it here
-        (void)state;
-    }
+    void close() { DM_motorClose(motor_id_, can_id_); }
 
-    void setCurrent(int16_t target_current) {
-        // not used by DM driver
-        (void)target_current;
-    }
+    void speedPositionControl(float pos, float vel) {/*RAD 另一边是电压*/DM_speedpositionControl(motor_id_, can_id_, pos, vel);}
+    
+    void decodeCanMsg(const uint8_t *rxData) {DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));}
 
-    int16_t updateCurrent() {
-        // can convert internal info_ data if desired
-        return 0;
-    }
+    void setpos(float pos_rad) { target_pos_rad = pos_rad; }
 
-private:
-    static void initDriver() {
-        static bool inited = false;
-        if (!inited) {
-            DM_Set_CAN_Send_Function(my_can_send);
-            inited = true;
-        }
+    void updatemove() { speedPositionControl(target_pos_rad, target_vel); }
+
+      private : static void
+                initDriver() {
+      static bool inited = false;
+      if (!inited) {
+        DM_Set_CAN_Send_Function(my_can_send);
+        inited = true;
+      }
     }
 
     static void my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]);
     /* per-instance driver information */
+    uint8_t motor_id_ = 0;
+    uint8_t can_id_ = 1;
     motor_t info_;
+    float target_pos_rad;
+    float target_vel;
+    
 };
 
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机
@@ -135,7 +136,7 @@ extern motor_rm MotorYawLS;     // 偏航丝杆电机
 extern motor_rm MotorLoad[2];   // 装填电机
 
 // DM wrapper instance (optional)
-extern motor_dm MotorDM4310;
+extern motor_dm MotorWindmill;
 
 } // namespace motor
 

@@ -114,18 +114,18 @@ void microros_node_task(void)
     trigger_servo[3].begin(&htim4, TIM_CHANNEL_4, HAL_RCC_GetPCLK2Freq(), 500,
                            2500, 0, 270, 10000, 100,
                            CONFIG_LOAD_SERVO_UP_ANGLE_0);
-    trigger_servo[4].begin(&htim5, TIM_CHANNEL_1, HAL_RCC_GetPCLK2Freq(), 500,
+    trigger_servo[4].begin(&htim5, TIM_CHANNEL_2, HAL_RCC_GetPCLK2Freq(), 500,
                            2500, 0, 270, 10000, 100,
                            CONFIG_LOAD_SERVO_UP_ANGLE_1);
     trigger_servo[5].begin(&htim5, TIM_CHANNEL_2, HAL_RCC_GetPCLK2Freq(), 500,
                            2500, 0, 270, 10000, 100,
-                           CONFIG_LOAD_SERVO_UP_ANGLE_1);
+                           CONFIG_LOAD_SERVO_UP_ANGLE_1);//暂时不能注释，原因还不清楚
     trigger_servo[6].begin(&htim5, TIM_CHANNEL_4, HAL_RCC_GetPCLK2Freq(), 500,
                            2500, 0, 270, 10000, 100,
                            CONFIG_SLIDE_SERVO_CUT_ANGLE);
-    /*trigger_servo[7].begin(&htim5, TIM_CHANNEL_4, HAL_RCC_GetPCLK2Freq(), 500,
-                           2500, 0, 270, 10000, 100,
-                           CONFIG_SLIDE_SERVO_CUT_ANGLE);*///添加一个舵机
+    trigger_servo[7].begin(&htim5, TIM_CHANNEL_1, HAL_RCC_GetPCLK2Freq(), 500,
+                           2500, 0, 180, 10000, 100,
+                           40);
 
     meter::velocity_meter.begin(
         &htim8, TIM_CHANNEL_1, &htim8, TIM_CHANNEL_2, 65536,

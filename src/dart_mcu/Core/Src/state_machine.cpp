@@ -5,6 +5,7 @@
 #include "state_machine.h"
 
 #include <cmath>
+#include <cstdint>
 #include <future>
 #include <sys/types.h>
 
@@ -88,6 +89,7 @@ namespace state_machine {
     trigger_servo[3].enable();                                                 \
     trigger_servo[4].enable();                                                 \
     trigger_servo[5].enable();                                                 \
+    trigger_servo[7].enable();                                                 \
   } while (0)
 
 #define disableLoadServo()                                                     \
@@ -96,6 +98,7 @@ namespace state_machine {
     trigger_servo[3].disable();                                                \
     trigger_servo[4].disable();                                                \
     trigger_servo[5].disable();                                                \
+    trigger_servo[7].disable();                                                \
   } while (0)
 
 #define setLoadServotoUP()                                                     \
@@ -552,7 +555,7 @@ public:
     last_sw_left = RC_Data.Switch_Left; // 保存上一次拨轮位置
 
     // 主动失能仅针对 DM4310：关闭/断开 DM4310 输出（安全起见）
-    DM_motorClose(1, 1);
+    motor::MotorWindmill.close();
   }
 
   void update(OpenFSM &fsm) const override {
@@ -606,7 +609,7 @@ public:
     soundEffectManager.clearSoundEffects();
 
     //这里，退出保护还要使能DM4310输出
-     DM_motorOpen(1, 1);
+    motor::MotorWindmill.open();
   }
 };
 
@@ -699,16 +702,36 @@ public:
     motor::MotorYawLS.setNextState(motor::E_MotorState::RUNNING);
     motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
 
-    // 响应遥控器指令
-      if (RC_Data.Switch_Left == RC_SW_UP) {
-      // 调试内容写在这里
-      
-      // 摇杆ch0旋转4310电机
-      // 直接一次性位置控制调用（Motor_ID=1, CAN_ID=1）
-      //DM_speedpositionControl(1, 1, 1.0f, 0.1f);
-
-      // 摇杆ch1控制舵机
+        // 响应遥控器指令
+        if (RC_Data.Switch_Left == RC_SW_UP) {
+        // 调试内容写在这里
         
+        // 摇杆ch0旋转4310电机
+        // 直接一次性位置控制调用（Motor_ID=1, CAN_ID=1）
+        //DM_speedpositionControl(1, 1, 1.0f, 0.1f);
+        //motor::MotorWindmill.speedPositionControl(0, 0.1f)
+          // 摇杆ch1控制舵机
+          static float temp_angle=90;
+       if (RC_Data.ch1 > 900 && RC_Data.ch1 < 1100){
+         temp_angle = temp_angle;
+        } else if (RC_Data.ch1 <= 900){
+          temp_angle = temp_angle-0.0001;
+        } else if (RC_Data.ch1 >= 1100){
+          temp_angle = temp_angle + 0.0001;
+        }
+        trigger_servo[7].setAngle((uint16_t)temp_angle);
+        //ch0控制电机
+        if (RC_Data.ch0 > 900 && RC_Data.ch0 < 1100) {
+            //motor::MotorWindmill.setpos(60.0 / 180.0 * 3.14159);
+            //motor::MotorWindmill.updatemove();
+        } else if (RC_Data.ch0 <= 900){
+            motor::MotorWindmill.setpos(0);
+            motor::MotorWindmill.updatemove();
+        }else if(RC_Data.ch0 >= 1100){
+            motor::MotorWindmill.setpos(60.0 / 180.0 * 3.14159);
+            motor::MotorWindmill.updatemove();
+        }
+
       // 摇杆ch2ch3控制三个气泵
 
     } else if (RC_Data.Switch_Left == RC_SW_MID) {

@@ -342,7 +342,7 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             }
         case 0x000: { // DM4310: StdId = DMJ_STDID(0x00)         
               temp++;
-              motor::MotorDM4310.decodeCanMsg(aData);
+              motor::MotorWindmill.decodeCanMsg(aData);
               break;
             }
         }
@@ -356,6 +356,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             {
                 motor::MotorYawLS.decodeCanMsg(&RxHeader, aData);
                 break;
+            }
+            case 0x013: { // DM4310: StdId = DMJ_STDID(0x00)
+              temp++;
+              motor::MotorWindmill.decodeCanMsg(aData);
+              break;
             }
             default:
             {
