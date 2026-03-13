@@ -206,9 +206,10 @@ void FSM::update() {
   // 状态机更新
   openFSM_.update();
   micro_switch_read();//读限位开关
-
-  // 遥控看门狗
-  static TickType_t last_reset_tick = xTaskGetTickCount();
+/*测试史*/
+  DM_speedpositionControl(1, 1, 1.0f, 0.01f);
+      // 遥控看门狗
+      static TickType_t last_reset_tick = xTaskGetTickCount();
   if (xTaskGetTickCount() - RC_Data.last_update_time > pdMS_TO_TICKS(1000) &&
       xTaskGetTickCount() - last_reset_tick > pdMS_TO_TICKS(200)) {
     DT7_Reset();
