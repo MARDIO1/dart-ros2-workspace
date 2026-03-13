@@ -96,7 +96,7 @@ public:
         info_.type = MOTOR_DM4310;
         info_.id = motor_id;
         info_.Reductionratio = MOTORDM4310_Reductionratio;
-        target_vel=0.001f;
+        target_vel=0.01f;
         target_pos_rad=0.0f;
     }
 

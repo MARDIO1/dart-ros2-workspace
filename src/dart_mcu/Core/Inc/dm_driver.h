@@ -9,12 +9,14 @@ extern "C" {
 
 // 宏定义
 #define DMJ_STDID 0x00                // MIT
+#define DMP_STDID 0X100
+#define DMS_STDID 0X200
 #define MOTORDM4310_Reductionratio 10 // DM4310减速比
 
 // 控制参数范围
 #define P_MIN -12.5f // 最小位置 (rad)
 #define P_MAX 12.5f  // 最大位置 (rad)
-#define V_MIN -30.0f // 最小速度 (rad/s)
+#define V_MIN 0.0f // 最小速度 (rad/s)
 #define V_MAX 30.0f  // 最大速度 (rad/s)
 #define T_MIN -10.0f // 最小扭矩 (N·m)
 #define T_MAX 10.0f  // 最大扭矩 (N·m)

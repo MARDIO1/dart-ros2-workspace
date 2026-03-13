@@ -52,19 +52,21 @@ void DM_speedpositionControl(uint8_t Motor_ID, uint8_t CAN_ID, float _pos,
   // _pos = _pos * 12.5f / 720.0f;  // 移除错误的角度转换
 
   // 转换为CAN数据
-  int p_int = float_to_uint(_pos, P_MIN, P_MAX, 16);
+  /*int p_int = float_to_uint(_pos, P_MIN, P_MAX, 16);
   int v_int = float_to_uint(_vel, V_MIN, V_MAX, 12);
-
-  data[0] = (p_int >> 8) & 0xFF;
+*/
+  /*data[0] = (p_int >> 8) & 0xFF;
   data[1] = p_int & 0xFF;
   data[2] = (v_int >> 4) & 0xFF;
   data[3] = ((v_int & 0xF) << 4) | 0x0F; // 低4位补1
   data[4] = 0xFF;                        // 扭矩设为0
   data[5] = 0xFF;
   data[6] = 0xFF;
-  data[7] = 0xFF;
+  data[7] = 0xFF;*/
+  memcpy(&data[0], &_pos, sizeof(float));
+  memcpy(&data[4], &_vel, sizeof(float));
 
-  dm_can_send(CAN_ID, DMJ_STDID + Motor_ID, data);
+  dm_can_send(CAN_ID, DMP_STDID + Motor_ID, data);//位置速度
 }
 
 // 处理电机反馈数据
