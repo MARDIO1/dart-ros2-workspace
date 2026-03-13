@@ -89,6 +89,7 @@ public:
 
     void create(uint8_t motor_id) {
         // set up struct and open CAN
+        initDriver();
         info_.type = MOTOR_DM4310;
         info_.id = motor_id;
         info_.Reductionratio = MOTORDM4310_Reductionratio;

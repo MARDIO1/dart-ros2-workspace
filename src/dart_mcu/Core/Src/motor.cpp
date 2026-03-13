@@ -16,8 +16,10 @@ void motor::motor_dm::my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8
     TxHeader.RTR = CAN_RTR_DATA;
     TxHeader.DLC = 8;
     TxHeader.TransmitGlobalTime = DISABLE;
-    
-    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, data, &TxMailbox);
+    if (CAN_ID==1)
+      HAL_CAN_AddTxMessage(&hcan1, &TxHeader, data, &TxMailbox);
+    if(CAN_ID==2)
+      HAL_CAN_AddTxMessage(&hcan2, &TxHeader, data, &TxMailbox);
 }
 
   // global DM driver struct removed; motor_dm now owns its own motor_t member (info_)
@@ -106,7 +108,7 @@ int16_t motor_rm::updateCurrent() {
   } else if (motor_state_ == DISCONNECTED) {
     motor_state_ = (IDLE);
   }
-
+  
   // update next_state
   if (motor_state_next_ != UNDEFINED && motor_state_ != DISCONNECTED) {
     motor_state_ = motor_state_next_;
@@ -114,12 +116,12 @@ int16_t motor_rm::updateCurrent() {
   } else if (motor_state_next_ != UNDEFINED && motor_state_ == DISCONNECTED) {
     motor_state_next_ = UNDEFINED;
   }
-
+  
   // Return Current value
   if (motor_state_ != RUNNING) {
     target_current_ = 0;
   }
-
+  
   return angle_reverse_ ? -target_current_ : target_current_;
 }
 } // namespace motor

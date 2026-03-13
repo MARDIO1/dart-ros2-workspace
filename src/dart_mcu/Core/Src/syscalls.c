@@ -29,6 +29,10 @@
 #include <sys/time.h>
 #include <sys/times.h>
 #include <time.h>
+#include <unistd.h>
+#include <stdint.h>
+
+#include "stm32f4xx_hal.h"
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
@@ -166,4 +170,55 @@ int _execve(char *name, char **argv, char **env)
     (void)env;
     errno = ENOMEM;
     return -1;
+}
+
+int usleep(useconds_t usec)
+{
+    if (usec == 0U)
+    {
+        return 0;
+    }
+
+    uint32_t delay_ms = (uint32_t)((usec + 999U) / 1000U);
+    HAL_Delay(delay_ms);
+    return 0;
+}
+
+int _gettimeofday(struct timeval *tv, void *tzvp)
+{
+    (void)tzvp;
+
+    if (tv == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    uint32_t ms = HAL_GetTick();
+    tv->tv_sec = (time_t)(ms / 1000U);
+    tv->tv_usec = (suseconds_t)((ms % 1000U) * 1000U);
+    return 0;
+}
+
+int _getentropy(void *buffer, size_t length)
+{
+    if (buffer == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    uint8_t *out = (uint8_t *)buffer;
+    static uint32_t state = 0x6d2b79f5U;
+
+    for (size_t i = 0; i < length; ++i)
+    {
+        state ^= HAL_GetTick() + (uint32_t)(i * 0x9e3779b9U);
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        out[i] = (uint8_t)(state & 0xFFU);
+    }
+
+    return 0;
 }

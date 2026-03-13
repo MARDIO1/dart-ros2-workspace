@@ -319,35 +319,31 @@ void HAL_CAN_ErrorCallback(CAN_HandleTypeDef *hcan)
 }
 
 // CAN接收中断
+__attribute__((noinline, optimize("O0")))
 void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
 {
-    CAN_RxHeaderTypeDef RxHeader;
-    uint8_t aData[8];
-    if (hcan == &hcan1)
-    {
-        HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, aData);
-        switch (RxHeader.StdId)
-        {
-            case 0x201:
-            {
-                motor::MotorTriggerLS.decodeCanMsg(&RxHeader, aData);
-                break;
+  volatile static int temp=0;
+  CAN_RxHeaderTypeDef RxHeader;
+  uint8_t aData[8];
+  if (hcan == &hcan1) {
+    HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, aData);
+    switch (RxHeader.StdId) {
+        case 0x201: {
+            motor::MotorTriggerLS.decodeCanMsg(&RxHeader, aData);
+            break;
             }
-            case 0x202:
-            {
-                motor::MotorLoad[0].decodeCanMsg(&RxHeader, aData);
-                break;
+        case 0x202: {
+            motor::MotorLoad[0].decodeCanMsg(&RxHeader, aData);
+            break;
             }
-            case 0x203:
-            {
-                motor::MotorLoad[1].decodeCanMsg(&RxHeader, aData);
-                break;
+        case 0x203: {
+            motor::MotorLoad[1].decodeCanMsg(&RxHeader, aData);
+            break;
             }
-            default:
-            {
-                // forward raw data to DM wrapper if needed
-                motor::MotorDM4310.decodeCanMsg(aData);
-                break;
+        case 0x000: { // DM4310: StdId = DMJ_STDID(0x00)         
+              temp++;
+              motor::MotorDM4310.decodeCanMsg(aData);
+              break;
             }
         }
     }
