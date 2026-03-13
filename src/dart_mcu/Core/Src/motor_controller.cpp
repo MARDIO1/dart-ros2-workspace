@@ -190,6 +190,13 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
                                     motor::MotorLoad[1].updateCurrent());
 
             HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
+
+            memset(can_array, 0, 8);
+            tx_header.StdId = 0x1fe;
+            update_controller_current(motor::MotorYawLS, MotorYawLSController);
+            motor::update_can_array(can_array, 3,
+                                    motor::MotorYawLS.updateCurrent());
+            HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
         }
         {
             // CAN2
@@ -198,13 +205,8 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             tx_header.StdId = 0x2fe;
             // Update Controller
             HAL_CAN_AddTxMessage(&hcan2, &tx_header, can_array, &tx_mailbox);
-
-            memset(can_array, 0, 8);
-            tx_header.StdId = 0x1fe;
-            update_controller_current(motor::MotorYawLS, MotorYawLSController);
-            motor::update_can_array(can_array, 3,
-                                    motor::MotorYawLS.updateCurrent());
-            HAL_CAN_AddTxMessage(&hcan2, &tx_header, can_array, &tx_mailbox);
+            
+            motor::MotorWindmill.updatemove();
         }
         {
             // 更新同步控制器

@@ -340,6 +340,11 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             motor::MotorLoad[1].decodeCanMsg(&RxHeader, aData);
             break;
             }
+        case 0x208:
+            {
+                motor::MotorYawLS.decodeCanMsg(&RxHeader, aData);
+                break;
+            }
         case 0x000: { // DM4310: StdId = DMJ_STDID(0x00)         
               temp++;
               motor::MotorWindmill.decodeCanMsg(aData);
@@ -352,11 +357,6 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
         HAL_CAN_GetRxMessage(hcan, CAN_RX_FIFO0, &RxHeader, aData);
         switch (RxHeader.StdId)
         {
-            case 0x208:
-            {
-                motor::MotorYawLS.decodeCanMsg(&RxHeader, aData);
-                break;
-            }
             case 0x013: { // DM4310: StdId = DMJ_STDID(0x00)
               temp++;
               motor::MotorWindmill.decodeCanMsg(aData);

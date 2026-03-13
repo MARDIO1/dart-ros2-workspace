@@ -726,10 +726,10 @@ public:
             //motor::MotorWindmill.updatemove();
         } else if (RC_Data.ch0 <= 900){
             motor::MotorWindmill.setpos(0);
-            motor::MotorWindmill.updatemove();
+            
         }else if(RC_Data.ch0 >= 1100){
             motor::MotorWindmill.setpos(60.0 / 180.0 * 3.14159);
-            motor::MotorWindmill.updatemove();
+            
         }
 
       // 摇杆ch2ch3控制三个气泵
