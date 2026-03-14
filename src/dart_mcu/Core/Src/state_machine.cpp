@@ -11,6 +11,7 @@
 
 #include "FreeRTOS.h"
 #include "buzzer_examples.h"
+#include "air_pump.h"
 #include "dart_config.h"
 #include "dbus.h"
 #include "judge_receive.h"
@@ -209,8 +210,6 @@ void FSM::update() {
   // 状态机更新
   openFSM_.update();
   micro_switch_read();//读限位开关
-/*测试史*/
-  //DM_speedpositionControl(1, 1, 1.0f, 0.01f);
       // 遥控看门狗
       static TickType_t last_reset_tick = xTaskGetTickCount();
   if (xTaskGetTickCount() - RC_Data.last_update_time > pdMS_TO_TICKS(1000) &&
@@ -553,6 +552,11 @@ public:
     meter::velocity_meter.disable();
     msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState();
     last_sw_left = RC_Data.Switch_Left; // 保存上一次拨轮位置
+//关闭气泵闸门24V输出
+    pneumatic::main_air_pump.off();
+    for (uint8_t i = 0; i < 3; ++i) {
+      pneumatic::main_solenoid[i].off();
+    }
 
     // 主动失能仅针对 DM4310：关闭/断开 DM4310 输出（安全起见）
     motor::MotorWindmill.close();
@@ -702,8 +706,16 @@ public:
     motor::MotorYawLS.setNextState(motor::E_MotorState::RUNNING);
     motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
 
-        // 响应遥控器指令
-        if (RC_Data.Switch_Left == RC_SW_UP) {
+    // 气泵与闸门仅在调试子模式(SW_LEFT=UP)可控，其他子模式默认关闭
+    if (RC_Data.Switch_Left != RC_SW_UP) {
+      pneumatic::main_air_pump.off();
+      for (uint8_t i = 0; i < 3; ++i) {
+        pneumatic::main_solenoid[i].off();
+      }
+    }
+
+    // 响应遥控器指令
+    if (RC_Data.Switch_Left == RC_SW_UP) {
         // 调试内容写在这里
         
         // 摇杆ch0旋转4310电机
@@ -721,18 +733,20 @@ public:
         }
         trigger_servo[7].setAngle((uint16_t)temp_angle);
         //ch0控制电机
+        static float moto_temp_angle = 90;
         if (RC_Data.ch0 > 900 && RC_Data.ch0 < 1100) {
-            //motor::MotorWindmill.setpos(60.0 / 180.0 * 3.14159);
-            //motor::MotorWindmill.updatemove();
         } else if (RC_Data.ch0 <= 900){
-            motor::MotorWindmill.setpos(0);
-            
+          moto_temp_angle += 0.0001;
         }else if(RC_Data.ch0 >= 1100){
-            motor::MotorWindmill.setpos(60.0 / 180.0 * 3.14159);
-            
+          moto_temp_angle -= 0.0001;
+          motor::MotorWindmill.setpos(moto_temp_angle / 180.0 * 3.14159);
         }
 
-      // 摇杆ch2ch3控制三个气泵
+      pneumatic::main_air_pump.on();
+      for (uint8_t i = 0; i < 3; ++i) {
+        pneumatic::main_solenoid[i].off();
+      }
+
 
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
       fsm.custom<Dart_FSM>()->launch_operating_ = false;
