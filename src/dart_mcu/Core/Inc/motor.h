@@ -112,10 +112,6 @@ public:
 
     void updatemove() { speedPositionControl(target_pos_rad, target_vel); }
 
-    float getAngleDeg() const { return info_.RealAngle; }
-
-    float getAngleRad() const { return info_.RealAngle * 3.14159265f / 180.0f; }
-
       private : static void
                 initDriver() {
       static bool inited = false;
