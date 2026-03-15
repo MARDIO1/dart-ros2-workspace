@@ -3,8 +3,8 @@
 
 namespace {
 GPIO_TypeDef *const kAirPumpPort =
-    GPIOH; // HAL_GPIO_WritePin(GPIOH, GPIO_PIN_2, 1);
-constexpr uint16_t kAirPumpPin = GPIO_PIN_2;
+  GPIOD;
+constexpr uint16_t kAirPumpPin = GPIO_PIN_13;
 GPIO_TypeDef *const kSolenoidPort = GPIOH;
 constexpr uint16_t kSolenoidPins[3] = {GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5};
 } // namespace
@@ -70,7 +70,7 @@ air_pump main_air_pump;
 solenoid main_solenoid[3];
 
 void begin() {
-  main_air_pump.begin(kAirPumpPort, kAirPumpPin, true, false);
+  main_air_pump.begin(kAirPumpPort, kAirPumpPin, false, false);
   for (uint8_t i = 0; i < 3; ++i) {
     main_solenoid[i].begin(kSolenoidPort, kSolenoidPins[i], true, false);
   }

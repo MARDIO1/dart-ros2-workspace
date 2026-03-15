@@ -96,7 +96,7 @@ public:
         info_.type = MOTOR_DM4310;
         info_.id = motor_id;
         info_.Reductionratio = MOTORDM4310_Reductionratio;
-        target_vel=1.0f;
+        target_vel_radps=1.0f;
         target_pos_rad=0.0f;
     }
 
@@ -110,7 +110,9 @@ public:
 
     void setpos(float pos_rad) { target_pos_rad = pos_rad; }
 
-    void updatemove() { speedPositionControl(target_pos_rad, target_vel); }
+    float getRealAngleDeg() const { return info_.RealAngle; }
+
+    void updatemove() { speedPositionControl(target_pos_rad, target_vel_radps); }
 
       private : static void
                 initDriver() {
@@ -126,9 +128,10 @@ public:
     uint8_t motor_id_ = 0;
     uint8_t can_id_ = 1;
     motor_t info_;
-    float target_pos_rad;
-    float target_vel;
     
+    public:
+    float target_vel_radps;
+    float target_pos_rad;
 };
 
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机

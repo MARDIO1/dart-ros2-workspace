@@ -4,6 +4,7 @@
 
 #include "state_machine.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <future>
@@ -393,7 +394,7 @@ E_ResetActionReturnState actionResetMotorUntilBlocked(
   } else if (running_flag_ == 1) {
     // 运行中
     if ((openloop_ == false &&
-         abs(controller_.motor_->target_current_) >= abs(gate_current_)) ||
+         abs(controller_.motor_->target_current_) >= abs(gate_current_)) &&
         (openloop_ == true &&
          abs(controller_.motor_->current_velocity_) <= abs(gate_velocity_))) {
       if (xTaskGetTickCount() - last_time > timeout_) {
@@ -706,14 +707,6 @@ public:
     motor::MotorYawLS.setNextState(motor::E_MotorState::RUNNING);
     motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
 
-    // 气泵与闸门仅在调试子模式(SW_LEFT=UP)可控，其他子模式默认关闭
-    if (RC_Data.Switch_Left != RC_SW_UP) {
-      pneumatic::main_air_pump.off();
-      for (uint8_t i = 0; i < 3; ++i) {
-        pneumatic::main_solenoid[i].off();
-      }
-    }
-
     // 响应遥控器指令
     if (RC_Data.Switch_Left == RC_SW_UP) {
         // 调试内容写在这里
@@ -723,30 +716,71 @@ public:
         //DM_speedpositionControl(1, 1, 1.0f, 0.1f);
         //motor::MotorWindmill.speedPositionControl(0, 0.1f)
           // 摇杆ch1控制舵机
-          static float temp_angle=90;
-       if (RC_Data.ch1 > 900 && RC_Data.ch1 < 1100){
+        static float temp_angle=0;
+        if (RC_Data.ch1 > 900 && RC_Data.ch1 < 1100){
          temp_angle = temp_angle;
         } else if (RC_Data.ch1 <= 900){
-          temp_angle = temp_angle-0.0001;
+          temp_angle = 30;
         } else if (RC_Data.ch1 >= 1100){
-          temp_angle = temp_angle + 0.0001;
+          temp_angle = 0;
         }
+
         trigger_servo[7].setAngle((uint16_t)temp_angle);
         //ch0控制电机
-        static float moto_temp_angle = 90;
-        if (RC_Data.ch0 > 900 && RC_Data.ch0 < 1100) {
-        } else if (RC_Data.ch0 <= 900){
-          moto_temp_angle += 0.0001;
-        }else if(RC_Data.ch0 >= 1100){
-          moto_temp_angle -= 0.0001;
-          motor::MotorWindmill.setpos(moto_temp_angle / 180.0 * 3.14159);
+
+        // 三档离散：0/1/2 -> -60/30/120
+        // 左拨：2->1, 1->0；右拨：0->1, 1->2；中间保持
+        static int state_ch0 = 1;
+        static int last_ch0_zone = 0; // -1:左, 0:中, 1:右
+        int ch0_zone = 0;
+        if (RC_Data.ch0 <= 900) {
+          ch0_zone = -1;
+        } else if (RC_Data.ch0 >= 1100) {
+          ch0_zone = 1;
         }
 
-      pneumatic::main_air_pump.on();
-      for (uint8_t i = 0; i < 3; ++i) {
-        pneumatic::main_solenoid[i].off();
-      }
+        if (ch0_zone != last_ch0_zone) {
+          if (ch0_zone == -1 && state_ch0 > 0) {
+            state_ch0--;
+          } else if (ch0_zone == 1 && state_ch0 < 2) {
+            state_ch0++;
+          }
+          last_ch0_zone = ch0_zone;
+        }
 
+        float moto_temp_angle_d = 30.0f;
+        if (state_ch0 == 0) {
+          moto_temp_angle_d = -60.0f;
+        } else if (state_ch0 == 2) {
+          moto_temp_angle_d = 120.0f;
+        }
+        motor::MotorWindmill.target_pos_rad =
+            moto_temp_angle_d/180.0*3.1415;
+         if (motor::MotorWindmill.target_pos_rad >
+                                  (180 / 180 * 3.1415926))
+           motor::MotorWindmill.target_pos_rad = (180 / 180 * 3.1415926);
+        if (motor::MotorWindmill.target_pos_rad < -90/180.0*3.1415)
+          motor::MotorWindmill.target_pos_rad = -90/180.0*3.1415;
+        motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+
+
+        pneumatic::main_air_pump.on();
+
+        static uint8_t pneumatic_state[3] = {0};
+        uint8_t select_solenoid = 0;
+        if (RC_Data.ch2 <= 900) {
+          select_solenoid = 0;
+        } else if (RC_Data.ch2 > 900 && RC_Data.ch2 <= 1100) {
+          select_solenoid = 1;
+        } else if (RC_Data.ch2 > 1100) {
+          select_solenoid = 2;
+        }
+        //1024是最大值
+        if(RC_Data.ch4_wheel>1684-400){
+            pneumatic::main_solenoid[select_solenoid].on();
+        } else if (RC_Data.ch4_wheel <400) {
+          pneumatic::main_solenoid[select_solenoid].off();
+        }
 
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
       fsm.custom<Dart_FSM>()->launch_operating_ = false;
@@ -1633,7 +1667,169 @@ class ActionMatch_New_Reload : public OpenFSMAction {
   /*新的装填机制:发射->滑台到安装位置后方->大摆锤旋转摇臂到安装角度
   ->总线舵机工作，旋转大摆锤pitch到安装角度->滑台移动主动安装镖体
   ->吸盘气阀打开->滑台向前接住->大摆锤旋转到允许发射角度->滑台向后拉到发射位置->发射*/
-  // 待施工
+  static constexpr float kDmInstallAngleDeg = 0.0f;
+  static constexpr float kDmLaunchAngleDeg = 45.0f;
+  static constexpr float kDmAngleToleranceDeg = 3.0f;
+  static constexpr int32_t kLoadAngleTolerance = 5;
+  static constexpr uint16_t kPitchInstallAngle = CONFIG_TRIGGER_SERVO_TRIGGER_ANGLE_0;
+
+  static bool isLoadReached(int32_t target) {
+    return std::abs(motor_controller::MotorLoadController[0]
+                        .current_angle_with_rounds_ -
+                    target) <= kLoadAngleTolerance &&
+           std::abs(motor_controller::MotorLoadController[1]
+                        .current_angle_with_rounds_ -
+                    target) <= kLoadAngleTolerance;
+  }
+
+  static int16_t calcLoadVelocityToTarget(int32_t target) {
+    const int32_t current_avg =
+        (motor_controller::MotorLoadController[0].current_angle_with_rounds_ +
+         motor_controller::MotorLoadController[1].current_angle_with_rounds_) /
+        2;
+    if (current_avg < target - kLoadAngleTolerance) {
+      return CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
+    }
+    if (current_avg > target + kLoadAngleTolerance) {
+      return -CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
+    }
+    return 0;
+  }
+
+  static void applyValvePatternByRound(uint8_t launch_process, uint8_t begin) {
+    for (uint8_t i = 0; i < 3; ++i) {
+      pneumatic::main_solenoid[i].on();
+    }
+
+    const uint8_t round_index =
+        (launch_process >= begin) ? (launch_process - begin) : 0;
+    if (round_index == 1) {
+      pneumatic::main_solenoid[0].off();
+    } else if (round_index == 2) {
+      pneumatic::main_solenoid[0].off();
+      pneumatic::main_solenoid[1].off();
+    }
+  }
+
+public:
+  void enter(OpenFSM &fsm) const override {
+    if (msgDartStatus.dart_launch_process >
+        msgDartProtocols.dart_launch_process_offset_end) {
+      fsm.nextAction();
+      return;
+    }
+
+    soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_winxp));
+    fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
+    fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
+    fsm.custom<Dart_FSM>()->ActionGeneral_Timer1_ = xTaskGetTickCount();
+    pre_launch_grant = false;
+    msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState() + 3;
+
+    pneumatic::main_air_pump.off();
+    for (uint8_t i = 0; i < 3; ++i) {
+      pneumatic::main_solenoid[i].off();
+    }
+  }
+
+  void update(OpenFSM &fsm) const override {
+    setNextStateByRemote(false, true);
+
+    motor::MotorLoad[0].setNextState(motor::E_MotorState::RUNNING);
+    motor::MotorLoad[1].setNextState(motor::E_MotorState::RUNNING);
+    motor::MotorYawLS.setNextState(motor::E_MotorState::RUNNING);
+    motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
+
+    motor_controller::MotorLoadController[0].set_state(
+        motor_controller::E_PID_Velocity_Angle_Controller_State::
+            VELOCITY_CONTROL);
+    motor_controller::MotorLoadController[1].set_state(
+        motor_controller::E_PID_Velocity_Angle_Controller_State::
+            VELOCITY_CONTROL);
+    motor_controller::MotorYawLSController.set_state(
+        motor_controller::E_PID_Velocity_Angle_Controller_State::ANGLE_CONTROL);
+    motor_controller::MotorTriggerLSController.set_state(
+        motor_controller::E_PID_Velocity_Angle_Controller_State::ANGLE_CONTROL);
+
+    int16_t base_velocity = 0;
+    const TickType_t now = xTaskGetTickCount();
+
+    switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
+    case 0:
+      base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD);
+      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD)) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;
+      }
+      break;
+    case 1:
+      motor::MotorWindmill.setpos(kDmInstallAngleDeg / 180.0f * 3.1415926f);
+      if (std::abs(motor::MotorWindmill.getRealAngleDeg() - kDmInstallAngleDeg) <=
+          kDmAngleToleranceDeg) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 2;
+        fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = now;
+      }
+      break;
+    case 2:
+      trigger_servo[7].setAngle(kPitchInstallAngle);
+      if (now - fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
+          pdMS_TO_TICKS(2000)) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 3;
+      }
+      break;
+    case 3:
+      base_velocity =
+          calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_INSTALL_PUSH);
+      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_INSTALL_PUSH)) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
+        fsm.custom<Dart_FSM>()->ActionGeneral_Timer1_ = now;
+        pneumatic::main_air_pump.on();
+        applyValvePatternByRound(msgDartStatus.dart_launch_process,
+                                 msgDartProtocols.dart_launch_process_offset_begin);
+      }
+      break;
+    case 4:
+      if (now - fsm.custom<Dart_FSM>()->ActionGeneral_Timer1_ >
+          pdMS_TO_TICKS(2000)) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
+      }
+      break;
+    case 5:
+      base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD);
+      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD)) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 6;
+      }
+      break;
+    case 6:
+      motor::MotorWindmill.setpos(kDmLaunchAngleDeg / 180.0f * 3.1415926f);
+      if (std::abs(motor::MotorWindmill.getRealAngleDeg() - kDmLaunchAngleDeg) <=
+          kDmAngleToleranceDeg) {
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 7;
+      }
+      break;
+    case 7:
+      base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN);
+      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN)) {
+        fsm.nextAction();
+      }
+      break;
+    default:
+      fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
+      break;
+    }
+
+    motor_controller::MotorLoadController[0].target_velocity_ =
+        base_velocity + motor_controller::MotorLoadSyncController.output;
+    motor_controller::MotorLoadController[1].target_velocity_ =
+        base_velocity - motor_controller::MotorLoadSyncController.output;
+  }
+
+  void exit(OpenFSM &fsm) const override {
+    pre_launch_grant = false;
+    pneumatic::main_air_pump.off();
+    for (uint8_t i = 0; i < 3; ++i) {
+      pneumatic::main_solenoid[i].off();
+    }
+  }
 };
 
 // 拉到底，触发一下装填阻挡舵机，
