@@ -3,8 +3,8 @@
 
 namespace {
 GPIO_TypeDef *const kAirPumpPort =
-  GPIOD;
-constexpr uint16_t kAirPumpPin = GPIO_PIN_13;
+  GPIOI;
+constexpr uint16_t kAirPumpPin = GPIO_PIN_2;
 GPIO_TypeDef *const kSolenoidPort = GPIOH;
 constexpr uint16_t kSolenoidPins[3] = {GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5};
 } // namespace

@@ -394,7 +394,7 @@ E_ResetActionReturnState actionResetMotorUntilBlocked(
   } else if (running_flag_ == 1) {
     // 运行中
     if ((openloop_ == false &&
-         abs(controller_.motor_->target_current_) >= abs(gate_current_)) &&
+         abs(controller_.motor_->target_current_) >= abs(gate_current_)) ||
         (openloop_ == true &&
          abs(controller_.motor_->current_velocity_) <= abs(gate_velocity_))) {
       if (xTaskGetTickCount() - last_time > timeout_) {
