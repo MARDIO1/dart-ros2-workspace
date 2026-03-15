@@ -764,7 +764,12 @@ public:
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
 
 
-        pneumatic::main_air_pump.on();
+        // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
+        if (RC_Data.ch3 >= 1100) {
+          pneumatic::main_air_pump.on();
+        } else if (RC_Data.ch3 <= 900) {
+          pneumatic::main_air_pump.off();
+        }
 
         static uint8_t pneumatic_state[3] = {0};
         uint8_t select_solenoid = 0;
