@@ -710,11 +710,7 @@ public:
     // 响应遥控器指令
     if (RC_Data.Switch_Left == RC_SW_UP) {
         // 调试内容写在这里
-        
-        // 摇杆ch0旋转4310电机
-        // 直接一次性位置控制调用（Motor_ID=1, CAN_ID=1）
-        //DM_speedpositionControl(1, 1, 1.0f, 0.1f);
-        //motor::MotorWindmill.speedPositionControl(0, 0.1f)
+
           // 摇杆ch1控制舵机
         static float temp_angle=0;
         if (RC_Data.ch1 > 900 && RC_Data.ch1 < 1100){
@@ -727,7 +723,6 @@ public:
 
         trigger_servo[7].setAngle((uint16_t)temp_angle);
         //ch0控制电机
-
         // 三档离散：0/1/2 -> -60/30/120
         // 左拨：2->1, 1->0；右拨：0->1, 1->2；中间保持
         static int state_ch0 = 1;
@@ -738,7 +733,6 @@ public:
         } else if (RC_Data.ch0 >= 1100) {
           ch0_zone = 1;
         }
-
         if (ch0_zone != last_ch0_zone) {
           if (ch0_zone == -1 && state_ch0 > 0) {
             state_ch0--;
@@ -765,7 +759,7 @@ public:
 
 
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
-        if (RC_Data.ch3 >= 1100) {
+        if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
         } else if (RC_Data.ch3 <= 900) {
           pneumatic::main_air_pump.off();
@@ -780,7 +774,7 @@ public:
         } else if (RC_Data.ch2 > 1100) {
           select_solenoid = 2;
         }
-        //1024是最大值
+        //1684是最大值
         if(RC_Data.ch4_wheel>1684-400){
             pneumatic::main_solenoid[select_solenoid].on();
         } else if (RC_Data.ch4_wheel <400) {
@@ -904,6 +898,7 @@ public:
           } else if (RC_Data.ch3 < 366) {
             fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 1;
           }
+
           break;
         case 1:
           base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
@@ -970,7 +965,7 @@ public:
           fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 0;
         }
       }
-
+        //自动的部分
       // 解除扳机控制
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State) {
       case 0:
@@ -1048,7 +1043,7 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State = 0;
       }
 
-      // 升降机控制
+      // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0:
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
@@ -1669,9 +1664,14 @@ class ActionMatch_Launch : public OpenFSMAction {
 };
 
 class ActionMatch_New_Reload : public OpenFSMAction {
-  /*新的装填机制:发射->滑台到安装位置后方->大摆锤旋转摇臂到安装角度
-  ->总线舵机工作，旋转大摆锤pitch到安装角度->滑台移动主动安装镖体
-  ->吸盘气阀打开->滑台向前接住->大摆锤旋转到允许发射角度->滑台向后拉到发射位置->发射*/
+  /*新的装填机制:发射后进入此动作->滑台，loadmoto移动到安装位置后方（需要调节位置参数1）（位置闭环，当落位，角度差值<5进入下一个动作)
+->大摆锤旋转摇臂到安装角度（需要调节位置参数）（DM角度闭环<3度误差进入下一个）
+->pitch舵机[7]工作，旋转大摆锤pitch到安装角度(定时器，大概2秒进入下一个动作）
+->滑台移动主动安装镖体（位置参数）（位置闭环）
+->吸盘气阀打开（定时器2秒）
+->滑台loadmoto向前移动接住（位置闭环）
+->大摆锤旋转到允许发射角度（位置闭环）
+->滑台向后拉到发射位置（位置闭环）（进入下一个动作）->发射*/
   static constexpr float kDmInstallAngleDeg = 0.0f;
   static constexpr float kDmLaunchAngleDeg = 45.0f;
   static constexpr float kDmAngleToleranceDeg = 3.0f;
@@ -1758,15 +1758,18 @@ public:
 
     int16_t base_velocity = 0;
     const TickType_t now = xTaskGetTickCount();
-
+//这是
     switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
+    //前面几个case是老版本
     case 0:
+    //load移动到装填
       base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD);
       if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD)) {
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;
       }
       break;
     case 1:
+    //
       motor::MotorWindmill.setpos(kDmInstallAngleDeg / 180.0f * 3.1415926f);
       if (std::abs(motor::MotorWindmill.getRealAngleDeg() - kDmInstallAngleDeg) <=
           kDmAngleToleranceDeg) {
