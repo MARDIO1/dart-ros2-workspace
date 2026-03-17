@@ -126,8 +126,7 @@ void microros_node_task(void)
                            2500, 0, 270, 10000, 100,
                            CONFIG_SLIDE_SERVO_CUT_ANGLE);
     trigger_servo[7].begin(&htim5, TIM_CHANNEL_1, HAL_RCC_GetPCLK2Freq(), 500,
-                           2500, 0, 180, 10000, 100,
-                           0);
+                           2500, 0, 270, 20000, 50, PITCH_ANGLE_UP);
 
     meter::velocity_meter.begin(
         &htim8, TIM_CHANNEL_1, &htim8, TIM_CHANNEL_2, 65536,

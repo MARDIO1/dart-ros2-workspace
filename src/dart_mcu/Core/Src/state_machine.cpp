@@ -66,13 +66,13 @@ namespace state_machine {
     trigger_servo[0].enable();                                                 \
     trigger_servo[1].enable();                                                 \
   } while (0)
-
+//激发，压下去
 #define setTriggerServotoTrigger()                                             \
   do {                                                                         \
     trigger_servo[0].setAngle(CONFIG_TRIGGER_SERVO_TRIGGER_ANGLE_0);           \
     trigger_servo[1].setAngle(CONFIG_TRIGGER_SERVO_TRIGGER_ANGLE_1);           \
   } while (0)
-
+//堵住，准备发射
 #define setTriggerServotoReload()                                              \
   do {                                                                         \
     trigger_servo[0].setAngle(CONFIG_TRIGGER_SERVO_RELOAD_ANGLE_0);            \
@@ -138,6 +138,15 @@ namespace state_machine {
   do {                                                                         \
     trigger_servo[6].setAngle(CONFIG_SLIDE_SERVO_CUT_ANGLE);                   \
   } while (0)
+#define NewLoadServorUp()                                                      \
+  do {                                                                         \
+    trigger_servo[7].setAngle(PITCH_ANGLE_UP);                               \
+  } while (0)
+
+#define NewLoadServorDown()                                                    \
+  do {                                                                         \
+    trigger_servo[7].setAngle(PITCH_ANGLE_DOWN);                               \
+  } while (0)
 
 #define simulateDartGateState()                                                \
   (RC_Data.Switch_Left == RC_SW_UP                                             \
@@ -152,9 +161,9 @@ namespace state_machine {
 #define disableLaser() HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_RESET)
 #define enableLaser() HAL_GPIO_WritePin(GPIOG, GPIO_PIN_13, GPIO_PIN_SET)
 
-// 裁判系统判定Flag
-uint8_t last_dart_launch_opening_status_ =
-    E_Gate_State::CLOSED;           // 上一次发射状态
+    // 裁判系统判定Flag
+    uint8_t last_dart_launch_opening_status_ =
+        E_Gate_State::CLOSED;       // 上一次发射状态
 uint16_t last_launch_cmd_time_ = 0; // 上一次发射指令下达时间
 uint64_t last_launch_time_ = 0;
 bool match_flag_ = false; // 上场比赛判断 若已经上场则执行最严格的安全措施
@@ -716,12 +725,13 @@ public:
         if (RC_Data.ch1 > 900 && RC_Data.ch1 < 1100){
          temp_angle = temp_angle;
         } else if (RC_Data.ch1 <= 900){
-          temp_angle = 30;
+          temp_angle = PITCH_ANGLE_DOWN;
+          
         } else if (RC_Data.ch1 >= 1100){
-          temp_angle = 0;
+          temp_angle = PITCH_ANGLE_UP;
         }
-
         trigger_servo[7].setAngle((uint16_t)temp_angle);
+
         //ch0控制电机
         // 三档离散：0/1/2 -> -60/30/120
         // 左拨：2->1, 1->0；右拨：0->1, 1->2；中间保持
@@ -748,15 +758,11 @@ public:
         } else if (state_ch0 == 2) {
           moto_temp_angle_d = 120.0f;
         }
-        motor::MotorWindmill.target_pos_rad =
-            moto_temp_angle_d/180.0*3.1415;
-         if (motor::MotorWindmill.target_pos_rad >
-                                  (180 / 180 * 3.1415926))
-           motor::MotorWindmill.target_pos_rad = (180 / 180 * 3.1415926);
-        if (motor::MotorWindmill.target_pos_rad < -90/180.0*3.1415)
-          motor::MotorWindmill.target_pos_rad = -90/180.0*3.1415;
+        motor::MotorWindmill.target_pos_rad = moto_temp_angle_d/180.0*3.1415;
+        
+        motor::MotorWindmill.target_pos_rad +=3.0/180.0 *3.1415926;
+        float temp_angle_d =motor::MotorWindmill.target_pos_rad * 180 / 3.14159;
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-
 
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
@@ -784,6 +790,7 @@ public:
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
       fsm.custom<Dart_FSM>()->launch_operating_ = false;
       // 扳机锁定在初始位置，不可触发操作，可以操作Yaw、Load电机和扳机丝杆
+      //yaw不用改
       {
         // Yaw轴控制
         // <--- 700 --- 900 --- 中点 --- 1100 --- 1310 --->
@@ -836,7 +843,7 @@ public:
         }
       }
 
-      // Trigger扳机丝杆控制
+      // Trigger扳机丝杆控制 不用改
       {
         // <--- 600 --- 800 --- 中点 --- 1200 --- 1410 --->
         // 如果有速度，则转为速度控制模式，否则转为位置控制模式
@@ -1016,7 +1023,7 @@ public:
       default:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
-
+      
       // 升降机装填控制
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State) {
       case 0:
@@ -1043,15 +1050,33 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State = 0;
       }
 
+
+      static int launch_time =0; // 发射次数是0->1->2-3其中第0次发射不需要控制装填机构
+      float target_windmill_angle =-180 + launch_time * 90; // 每次发射转盘前进90度
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0:
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;
+          // 首先初处理风车位子，即转盘前进一个格子
+          if(launch_time==0){
+              motor::MotorWindmill.target_pos_rad = -180*3.1415/180;
+              fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=0;//第一次发射不需要控制装填机构，直接返回等待下一次发射指令
+          }else if(launch_time==1){
+              motor::MotorWindmill.target_pos_rad = -90*3.1415/180;
+          }else if(launch_time==2){
+              motor::MotorWindmill.target_pos_rad = 0;
+              motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+          }else if(launch_time==3){
+              motor::MotorWindmill.target_pos_rad = 90*3.1415/180;
+          }
+          motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+          launch_time++;
         }
         break;
       case 1:
-        // 装填电机向下运动到装填位置
+        //  装填电机向下运动到装填位置（的后方）
+        // 速度不用改，位子也许要改
         base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
         if (motor_controller::MotorLoadController[0]
                     .current_angle_with_rounds_ >=
@@ -1061,21 +1086,22 @@ public:
                 CONFIG_MOTOR_LOAD_ANGLE_DOWN) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 2;
           fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
-          setLoadServotoDOWN();
-          setTriggerServotoTrigger();
+          setLoadServotoDOWN();//没有用了
+          setTriggerServotoTrigger();//扳机，有用，压下去。
         }
         break;
       case 2:
+      {
         // 降下升降机并等待时间到达
-        if (xTaskGetTickCount() -
-                fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
-            pdMS_TO_TICKS(CONFIG_LIFT_WAIT_TIME)) {
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 3;
-        }
+        //风车pitch下来
+        NewLoadServorDown();
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 3;
         break;
+      }
       case 3:
-        base_velocity = -(CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD);
+        base_velocity = -(CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD);//速控向下运动
         // 装填电机向上运动到发射位置
+        //新版本变为向上运动到吸盘位子
         if (motor_controller::MotorLoadController[0]
                     .current_angle_with_rounds_ <=
                 CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD |
@@ -1084,10 +1110,22 @@ public:
                 CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
           setLoadServotoUP();
-          setTriggerServotoReload();
+          //setTriggerServotoReload();//堵住准备发射
         }
         break;
       case 4:
+        if (launch_time >=1&&launch_time<=3){
+            //每次发射后风车转90度，装填机构复位
+            motor::MotorWindmill.target_pos_rad = target_windmill_angle/180.0*3.1415;
+            motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+          pneumatic::main_solenoid[launch_time - 1].off();
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
+        }
+        break;
+      case 5:
+        //风车pitch运动
+        NewLoadServorUp();
+        //装填完毕，准备发射
         // 等待Wheel复位
         if (RC_Data.ch4_wheel < 1622) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;

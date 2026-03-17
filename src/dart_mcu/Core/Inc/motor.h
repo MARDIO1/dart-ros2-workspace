@@ -127,11 +127,12 @@ public:
     /* per-instance driver information */
     uint8_t motor_id_ = 0;
     uint8_t can_id_ = 1;
-    motor_t info_;
+    
     
     public:
-    float target_vel_radps;
-    float target_pos_rad;
+      motor_t info_;
+      float target_vel_radps;
+      float target_pos_rad;
 };
 
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机
