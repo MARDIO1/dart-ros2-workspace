@@ -1011,7 +1011,7 @@ public:
             motor_controller::MotorLoadController[1]
                     .current_angle_with_rounds_ <= CONFIG_MOTOR_LOAD_ANGLE_UP) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 4;
-          setTriggerServotoReload();
+          //setTriggerServotoReload();
         }
         break;
       case 4:

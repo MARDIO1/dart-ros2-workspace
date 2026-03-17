@@ -86,18 +86,25 @@ public:
 // DM4310-specific motor wrapper
 class motor_dm {
 public:
-    motor_dm() { initDriver(); }
+  /* per-instance driver information */
+  uint8_t motor_id_ = 0;
+  uint8_t can_id_ = 1;
+  motor_t info_;
+  float target_vel_radps;
+  float target_pos_rad;
+  float angle_offset_rad = 0.0f;
+  motor_dm() { initDriver(); }
 
-    void create(uint8_t motor_id, uint8_t can_id) {
-        // set up struct and open CAN
-        initDriver();
-        motor_id_ = motor_id;
-        can_id_ = can_id;
-        info_.type = MOTOR_DM4310;
-        info_.id = motor_id;
-        info_.Reductionratio = MOTORDM4310_Reductionratio;
-        target_vel_radps=1.0f;
-        target_pos_rad=0.0f;
+  void create(uint8_t motor_id, uint8_t can_id) {
+    // set up struct and open CAN
+    initDriver();
+    motor_id_ = motor_id;
+    can_id_ = can_id;
+    info_.type = MOTOR_DM4310;
+    info_.id = motor_id;
+    info_.Reductionratio = MOTORDM4310_Reductionratio;
+    target_vel_radps = 1.0f;
+    target_pos_rad = 0.0f;
     }
 
     void open() { DM_motorOpen(motor_id_, can_id_); }
@@ -124,15 +131,7 @@ public:
     }
 
     static void my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]);
-    /* per-instance driver information */
-    uint8_t motor_id_ = 0;
-    uint8_t can_id_ = 1;
-    
-    
-    public:
-      motor_t info_;
-      float target_vel_radps;
-      float target_pos_rad;
+
 };
 
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机

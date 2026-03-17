@@ -79,9 +79,7 @@ void DM_infoHandle(motor_t *mot, uint8_t *Data) {
   mtr.id = Data[0] & 0x0F;
   mtr.state = Data[0] >> 4;
 
-  if (mot->Error_id == 0) {
-    mot->Error_id = mtr.state;
-  }
+  mot->Error_id = (Data[0] >> 4) & 0x0F;//为什么之前是
 
   // 解析位置、速度、扭矩
   int p_int = (Data[1] << 8) | Data[2];

@@ -4,6 +4,8 @@
 
 #include "motor_controller.h"
 #include "cstring"
+#include "state_machine.h"
+#include <cstdint>
 
 #define update_controller_current(motor_, motor_controller_)                   \
     if (motor_.motor_state_ == motor::RUNNING)                                 \
@@ -205,8 +207,20 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             tx_header.StdId = 0x2fe;
             // Update Controller
             HAL_CAN_AddTxMessage(&hcan2, &tx_header, can_array, &tx_mailbox);
-            
-            motor::MotorWindmill.updatemove();
+            //在保护和boot状态下不要使能
+            bool protect = (state_machine::dart_fsm.openFSM_.focusEState() ==
+                                state_machine::E_Dart_State::Protect ||
+                            state_machine::dart_fsm.openFSM_.focusEState() ==
+                                state_machine::E_Dart_State::Boot);
+            static uint8_t temp_count = 0;
+            temp_count++;
+            if (protect) {
+              motor::MotorWindmill.close();
+            } else {
+            if(temp_count%10==0)
+                motor::MotorWindmill.open();
+                else motor::MotorWindmill.updatemove();
+            }
         }
         {
             // 更新同步控制器
