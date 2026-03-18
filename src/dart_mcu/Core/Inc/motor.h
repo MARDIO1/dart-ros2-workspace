@@ -93,6 +93,7 @@ public:
   float target_vel_radps;
   float target_pos_rad;
   float angle_offset_rad = 0.0f;
+  float standerd_angle_rad = 0.0f;
   motor_dm() { initDriver(); }
 
   void create(uint8_t motor_id, uint8_t can_id) {
@@ -105,6 +106,7 @@ public:
     info_.Reductionratio = MOTORDM4310_Reductionratio;
     target_vel_radps = 1.0f;
     target_pos_rad = 0.0f;
+    standerd_angle_rad = +(17+30) / 180.0 * 3.1415926;//这里调节校准
     }
 
     void open() { DM_motorOpen(motor_id_, can_id_); }
@@ -115,7 +117,7 @@ public:
     
     void decodeCanMsg(const uint8_t *rxData) {DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));}
 
-    void setpos(float pos_rad) { target_pos_rad = pos_rad; }
+    void setpos(float pos_rad) { target_pos_rad = pos_rad+standerd_angle_rad; }
 
     float getRealAngleDeg() const { return info_.RealAngle; }
 

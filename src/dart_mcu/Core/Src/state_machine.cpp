@@ -761,18 +761,16 @@ public:
           }
           last_ch0_zone = ch0_zone;
         }
-
-        float moto_temp_angle_d = 30.0f;
+        float moto_temp_angle_d = 0.0f;
         if (state_ch0 == 0) {
-          moto_temp_angle_d = -60.0f;
+          moto_temp_angle_d = -90.0f;
         } else if (state_ch0 == 2) {
-          moto_temp_angle_d = 120.0f;
+          moto_temp_angle_d = 90.0f;
         }
         motor::MotorWindmill.target_pos_rad = moto_temp_angle_d/180.0*3.1415;
-        motor::MotorWindmill.target_pos_rad +=17/180.0 *3.1415926; //方向，从自己视角看，正数为逆时针，负数为顺时针
         float temp_angle_d =motor::MotorWindmill.target_pos_rad * 180 / 3.14159;
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-
+        
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
@@ -1001,9 +999,9 @@ public:
               motor::MotorWindmill.target_pos_rad = -90*3.1415/180;
           }else if(launch_time==2){
               motor::MotorWindmill.target_pos_rad = 0;
-              motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
           }else if(launch_time==3){
               motor::MotorWindmill.target_pos_rad = 90*3.1415/180;
+              launch_time=0;//发射次数回到0下一个循环
           }
           motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
           launch_time++;
@@ -1019,10 +1017,10 @@ public:
             motor_controller::MotorLoadController[1]
                     .current_angle_with_rounds_ >=
                 CONFIG_MOTOR_LOAD_ANGLE_DOWN) {
+          setTriggerServotoTrigger(); // 扳机，有用，压下去。脉冲
+          NewLoadServorDown();
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 2;
           fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
-          setLoadServotoDOWN();//没有用了
-          setTriggerServotoTrigger();//扳机，有用，压下去。
         }
         break;
       case 2:
@@ -1030,30 +1028,32 @@ public:
         // 降下升降机并等待时间到达
         //风车pitch下来
         NewLoadServorDown();
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 3;
+        if (xTaskGetTickCount() -
+                fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
+            pdMS_TO_TICKS(CONFIG_PITCH_WIND)) {
+          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 3;
+        }
         break;
       }
       case 3:
-        base_velocity = -(CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD);//速控向下运动
+        base_velocity = -(CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD);
         // 装填电机向上运动到发射位置
         //新版本变为向上运动到吸盘位子
         if (motor_controller::MotorLoadController[0]
                     .current_angle_with_rounds_ <=
-                CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD |
+                CONFIG_MOTOR_LOAD_ANGLE_WIND |
             motor_controller::MotorLoadController[1]
                     .current_angle_with_rounds_ <=
-                CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD) {
+                CONFIG_MOTOR_LOAD_ANGLE_WIND) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
           setLoadServotoUP();
           //setTriggerServotoReload();//堵住准备发射
         }
         break;
       case 4:
+      //关闭对应的气闸门
         if (launch_time >=1&&launch_time<=3){
-            //每次发射后风车转90度，装填机构复位
-            motor::MotorWindmill.target_pos_rad = target_windmill_angle/180.0*3.1415;
-            motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-          pneumatic::main_solenoid[launch_time - 1].off();
+            pneumatic::main_solenoid[launch_time - 1].off();
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
         }
         break;
