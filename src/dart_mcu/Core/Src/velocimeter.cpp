@@ -36,8 +36,8 @@ void velocimeter::begin(TIM_HandleTypeDef *htim_begin, uint32_t channel_begin,
 
 void velocimeter::enable(bool oneshot)
 {
-    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_4, GPIO_PIN_SET);
-    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_5, GPIO_PIN_SET);
+    //HAL_GPIO_WritePin(GPIOH, GPIO_PIN_4, GPIO_PIN_SET);
+    //HAL_GPIO_WritePin(GPIOH, GPIO_PIN_5, GPIO_PIN_SET);
     prev_state = state;
     state = oneshot ? ONESHOT : CONTINOUS;
     HAL_TIM_IC_Start_IT(htim_begin, channel_begin);
@@ -45,8 +45,8 @@ void velocimeter::enable(bool oneshot)
 
 void velocimeter::disable()
 {
-    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_4, GPIO_PIN_RESET);
-    HAL_GPIO_WritePin(GPIOH, GPIO_PIN_5, GPIO_PIN_RESET);
+    //HAL_GPIO_WritePin(GPIOH, GPIO_PIN_4, GPIO_PIN_RESET);
+    //HAL_GPIO_WritePin(GPIOH, GPIO_PIN_5, GPIO_PIN_RESET);
     prev_state = state;
     state = IDLE;
 }
