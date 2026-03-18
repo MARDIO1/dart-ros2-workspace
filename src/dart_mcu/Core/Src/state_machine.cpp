@@ -562,11 +562,11 @@ public:
     meter::velocity_meter.disable();
     msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState();
     last_sw_left = RC_Data.Switch_Left; // 保存上一次拨轮位置
-//关闭气泵闸门24V输出
-    pneumatic::main_air_pump.off();
+//关闭气泵闸门24V输出，算了还是别关了，担心机翼掉下来，气泵闸门本身不是会造成破坏的东西
+    /*pneumatic::main_air_pump.off();
     for (uint8_t i = 0; i < 3; ++i) {
       pneumatic::main_solenoid[i].off();
-    }
+    }*/
 
     // 主动失能仅针对 DM4310：关闭/断开 DM4310 输出（安全起见）
     motor::MotorWindmill.close();
@@ -718,16 +718,26 @@ public:
 
     // 响应遥控器指令
     if (RC_Data.Switch_Left == RC_SW_UP) {
-        // 调试内容写在这里
+      // Load 电机无条件速度置零锁（左上分支）
+      motor_controller::MotorLoadController[0].set_state(
+          motor_controller::E_PID_Velocity_Angle_Controller_State::
+              VELOCITY_CONTROL);
+      motor_controller::MotorLoadController[1].set_state(
+          motor_controller::E_PID_Velocity_Angle_Controller_State::
+              VELOCITY_CONTROL);
+      motor_controller::MotorLoadController[0].target_velocity_ = 0;
+      motor_controller::MotorLoadController[1].target_velocity_ = 0;
+      //motor_controller::MotorLoadSyncController.reset();
+      // 调试内容写在这里
 
-          // 摇杆ch1控制舵机
-        static float temp_angle=0;
-        if (RC_Data.ch1 > 900 && RC_Data.ch1 < 1100){
-         temp_angle = temp_angle;
-        } else if (RC_Data.ch1 <= 900){
+      // 摇杆ch1控制舵机
+      static float temp_angle = 0;
+      if (RC_Data.ch1 > 500 && RC_Data.ch1 < 1500) {
+        temp_angle = temp_angle;
+        } else if (RC_Data.ch1 <= 500){
           temp_angle = PITCH_ANGLE_DOWN;
           
-        } else if (RC_Data.ch1 >= 1100){
+        } else if (RC_Data.ch1 >= 1500){
           temp_angle = PITCH_ANGLE_UP;
         }
         trigger_servo[7].setAngle((uint16_t)temp_angle);
@@ -738,9 +748,9 @@ public:
         static int state_ch0 = 1;
         static int last_ch0_zone = 0; // -1:左, 0:中, 1:右
         int ch0_zone = 0;
-        if (RC_Data.ch0 <= 900) {
+        if (RC_Data.ch0 <= 500) {
           ch0_zone = -1;
-        } else if (RC_Data.ch0 >= 1100) {
+        } else if (RC_Data.ch0 >= 1500) {
           ch0_zone = 1;
         }
         if (ch0_zone != last_ch0_zone) {
@@ -759,8 +769,7 @@ public:
           moto_temp_angle_d = 120.0f;
         }
         motor::MotorWindmill.target_pos_rad = moto_temp_angle_d/180.0*3.1415;
-        
-        motor::MotorWindmill.target_pos_rad +=3.0/180.0 *3.1415926;
+        motor::MotorWindmill.target_pos_rad +=17/180.0 *3.1415926; //方向，从自己视角看，正数为逆时针，负数为顺时针
         float temp_angle_d =motor::MotorWindmill.target_pos_rad * 180 / 3.14159;
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
 
@@ -769,7 +778,7 @@ public:
           pneumatic::main_air_pump.on();
         } else if (RC_Data.ch3 <= 900) {
           pneumatic::main_air_pump.off();
-        }
+        }//如果遥控器信号不好怎么办？
 
         static uint8_t pneumatic_state[3] = {0};
         uint8_t select_solenoid = 0;
@@ -843,7 +852,7 @@ public:
         }
       }
 
-      // Trigger扳机丝杆控制 不用改
+      // Trigger扳机丝杆控制 
       {
         // <--- 600 --- 800 --- 中点 --- 1200 --- 1410 --->
         // 如果有速度，则转为速度控制模式，否则转为位置控制模式
@@ -891,52 +900,9 @@ public:
       // 2. Operating to Launch状态：Load电机向上运动到发射位置
       // 3. Operating状态：遥控器控制Load电机运动
       int16_t base_velocity = 0;
+      base_velocity = 0;
+      base_velocity = 0;
       {
-        switch (fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State) {
-        case 0:
-          base_velocity = 0;
-
-          // 状态转移
-          if (RC_Data.ch3 >= 1600) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 2;
-          } else if ((RC_Data.ch3 > 1400 && RC_Data.ch3 < 1600) |
-                     (RC_Data.ch3 >= 366 && RC_Data.ch3 < 950)) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 3;
-          } else if (RC_Data.ch3 < 366) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 1;
-          }
-
-          break;
-        case 1:
-          base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
-          // 状态转移
-          if ((RC_Data.ch3 >= 1600) |
-              (motor_controller::MotorLoadController[0]
-                       .current_angle_with_rounds_ >=
-                   CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN |
-               motor_controller::MotorLoadController[1]
-                       .current_angle_with_rounds_ >=
-                   CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN)) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 0;
-            base_velocity = 0;
-          }
-          break;
-
-        case 2:
-          base_velocity = -CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
-          // 状态转移
-          if ((RC_Data.ch3 < 950) | (motor_controller::MotorLoadController[0]
-                                             .current_angle_with_rounds_ <=
-                                         CONFIG_MOTOR_LOAD_ANGLE_UP |
-                                     motor_controller::MotorLoadController[1]
-                                             .current_angle_with_rounds_ <=
-                                         CONFIG_MOTOR_LOAD_ANGLE_UP)) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 0;
-            base_velocity = 0;
-          }
-          break;
-
-        case 3:
           // 下
           if (RC_Data.ch3 <= 950 &&
               !(motor_controller::MotorLoadController[0]
@@ -957,26 +923,12 @@ public:
                           CONFIG_MOTOR_LOAD_ANGLE_UP))) {
             base_velocity = -CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
           }
-
-          // 状态转移
-          if (RC_Data.ch3 < 366) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 1;
-          } else if (RC_Data.ch3 >= 1600) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 2;
-          } else if (RC_Data.ch3 >= 950 && RC_Data.ch3 < 1400) {
-            fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 0;
-          }
-
-          break;
-        default:
-          fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 0;
-        }
-      }
-        //自动的部分
-      // 解除扳机控制
+        }//分块
+      //自动的部分
+      // 解除扳机控制 复位流程 不用变
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State) {
       case 0:
-        if (RC_Data.Switch_Left == RC_SW_UP && RC_Data.ch4_wheel <= 514) {
+        if (RC_Data.ch4_wheel <= 514) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 1;
         }
         break;
@@ -1011,7 +963,7 @@ public:
             motor_controller::MotorLoadController[1]
                     .current_angle_with_rounds_ <= CONFIG_MOTOR_LOAD_ANGLE_UP) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 4;
-          //setTriggerServotoReload();
+          setTriggerServotoReload();
         }
         break;
       case 4:
@@ -1024,33 +976,6 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
       
-      // 升降机装填控制
-      switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State) {
-      case 0:
-        if (RC_Data.Switch_Left == RC_SW_MID && RC_Data.ch4_wheel <= 514) {
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State = 1;
-          setSlidedownServotoSlide();
-          fsm.custom<Dart_FSM>()->ActionGeneral_Timer2_ = xTaskGetTickCount();
-        }
-        break;
-      case 1:
-        if (xTaskGetTickCount() -
-                fsm.custom<Dart_FSM>()->ActionGeneral_Timer2_ >
-            pdMS_TO_TICKS(CONFIG_SLIDE_SERVO_WAIT_TIME)) {
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State = 2;
-          setSlidedownServotoCut();
-        }
-        break;
-      case 2:
-        // 等待遥控器复位
-        if (RC_Data.ch4_wheel > 514)
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State = 0;
-        break;
-      default:
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Slidedown_State = 0;
-      }
-
-
       static int launch_time =0; // 发射次数是0->1->2-3其中第0次发射不需要控制装填机构
       float target_windmill_angle =-180 + launch_time * 90; // 每次发射转盘前进90度
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
@@ -1131,7 +1056,7 @@ public:
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
         }
       }
-
+      //稳住当前
       motor_controller::MotorLoadController[0].target_velocity_ =
           base_velocity + motor_controller::MotorLoadSyncController.output;
       motor_controller::MotorLoadController[1].target_velocity_ =
@@ -1710,172 +1635,6 @@ class ActionMatch_New_Reload : public OpenFSMAction {
 ->滑台loadmoto向前移动接住（位置闭环）
 ->大摆锤旋转到允许发射角度（位置闭环）
 ->滑台向后拉到发射位置（位置闭环）（进入下一个动作）->发射*/
-  static constexpr float kDmInstallAngleDeg = 0.0f;
-  static constexpr float kDmLaunchAngleDeg = 45.0f;
-  static constexpr float kDmAngleToleranceDeg = 3.0f;
-  static constexpr int32_t kLoadAngleTolerance = 5;
-  static constexpr uint16_t kPitchInstallAngle = CONFIG_TRIGGER_SERVO_TRIGGER_ANGLE_0;
-
-  static bool isLoadReached(int32_t target) {
-    return std::abs(motor_controller::MotorLoadController[0]
-                        .current_angle_with_rounds_ -
-                    target) <= kLoadAngleTolerance &&
-           std::abs(motor_controller::MotorLoadController[1]
-                        .current_angle_with_rounds_ -
-                    target) <= kLoadAngleTolerance;
-  }
-
-  static int16_t calcLoadVelocityToTarget(int32_t target) {
-    const int32_t current_avg =
-        (motor_controller::MotorLoadController[0].current_angle_with_rounds_ +
-         motor_controller::MotorLoadController[1].current_angle_with_rounds_) /
-        2;
-    if (current_avg < target - kLoadAngleTolerance) {
-      return CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
-    }
-    if (current_avg > target + kLoadAngleTolerance) {
-      return -CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
-    }
-    return 0;
-  }
-
-  static void applyValvePatternByRound(uint8_t launch_process, uint8_t begin) {
-    for (uint8_t i = 0; i < 3; ++i) {
-      pneumatic::main_solenoid[i].on();
-    }
-
-    const uint8_t round_index =
-        (launch_process >= begin) ? (launch_process - begin) : 0;
-    if (round_index == 1) {
-      pneumatic::main_solenoid[0].off();
-    } else if (round_index == 2) {
-      pneumatic::main_solenoid[0].off();
-      pneumatic::main_solenoid[1].off();
-    }
-  }
-
-public:
-  void enter(OpenFSM &fsm) const override {
-    if (msgDartStatus.dart_launch_process >
-        msgDartProtocols.dart_launch_process_offset_end) {
-      fsm.nextAction();
-      return;
-    }
-
-    soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_winxp));
-    fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
-    fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
-    fsm.custom<Dart_FSM>()->ActionGeneral_Timer1_ = xTaskGetTickCount();
-    pre_launch_grant = false;
-    msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState() + 3;
-
-    pneumatic::main_air_pump.off();
-    for (uint8_t i = 0; i < 3; ++i) {
-      pneumatic::main_solenoid[i].off();
-    }
-  }
-
-  void update(OpenFSM &fsm) const override {
-    setNextStateByRemote(false, true);
-
-    motor::MotorLoad[0].setNextState(motor::E_MotorState::RUNNING);
-    motor::MotorLoad[1].setNextState(motor::E_MotorState::RUNNING);
-    motor::MotorYawLS.setNextState(motor::E_MotorState::RUNNING);
-    motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
-
-    motor_controller::MotorLoadController[0].set_state(
-        motor_controller::E_PID_Velocity_Angle_Controller_State::
-            VELOCITY_CONTROL);
-    motor_controller::MotorLoadController[1].set_state(
-        motor_controller::E_PID_Velocity_Angle_Controller_State::
-            VELOCITY_CONTROL);
-    motor_controller::MotorYawLSController.set_state(
-        motor_controller::E_PID_Velocity_Angle_Controller_State::ANGLE_CONTROL);
-    motor_controller::MotorTriggerLSController.set_state(
-        motor_controller::E_PID_Velocity_Angle_Controller_State::ANGLE_CONTROL);
-
-    int16_t base_velocity = 0;
-    const TickType_t now = xTaskGetTickCount();
-//这是
-    switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
-    //前面几个case是老版本
-    case 0:
-    //load移动到装填
-      base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD);
-      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD)) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;
-      }
-      break;
-    case 1:
-    //
-      motor::MotorWindmill.setpos(kDmInstallAngleDeg / 180.0f * 3.1415926f);
-      if (std::abs(motor::MotorWindmill.getRealAngleDeg() - kDmInstallAngleDeg) <=
-          kDmAngleToleranceDeg) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 2;
-        fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = now;
-      }
-      break;
-    case 2:
-      trigger_servo[7].setAngle(kPitchInstallAngle);
-      if (now - fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
-          pdMS_TO_TICKS(2000)) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 3;
-      }
-      break;
-    case 3:
-      base_velocity =
-          calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_INSTALL_PUSH);
-      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_INSTALL_PUSH)) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
-        fsm.custom<Dart_FSM>()->ActionGeneral_Timer1_ = now;
-        pneumatic::main_air_pump.on();
-        applyValvePatternByRound(msgDartStatus.dart_launch_process,
-                                 msgDartProtocols.dart_launch_process_offset_begin);
-      }
-      break;
-    case 4:
-      if (now - fsm.custom<Dart_FSM>()->ActionGeneral_Timer1_ >
-          pdMS_TO_TICKS(2000)) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
-      }
-      break;
-    case 5:
-      base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD);
-      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD)) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 6;
-      }
-      break;
-    case 6:
-      motor::MotorWindmill.setpos(kDmLaunchAngleDeg / 180.0f * 3.1415926f);
-      if (std::abs(motor::MotorWindmill.getRealAngleDeg() - kDmLaunchAngleDeg) <=
-          kDmAngleToleranceDeg) {
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 7;
-      }
-      break;
-    case 7:
-      base_velocity = calcLoadVelocityToTarget(CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN);
-      if (isLoadReached(CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN)) {
-        fsm.nextAction();
-      }
-      break;
-    default:
-      fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
-      break;
-    }
-
-    motor_controller::MotorLoadController[0].target_velocity_ =
-        base_velocity + motor_controller::MotorLoadSyncController.output;
-    motor_controller::MotorLoadController[1].target_velocity_ =
-        base_velocity - motor_controller::MotorLoadSyncController.output;
-  }
-
-  void exit(OpenFSM &fsm) const override {
-    pre_launch_grant = false;
-    pneumatic::main_air_pump.off();
-    for (uint8_t i = 0; i < 3; ++i) {
-      pneumatic::main_solenoid[i].off();
-    }
-  }
 };
 
 // 拉到底，触发一下装填阻挡舵机，
