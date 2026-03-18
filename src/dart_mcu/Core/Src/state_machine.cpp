@@ -779,8 +779,9 @@ public:
         } else if (RC_Data.ch3 <= 900) {
           pneumatic::main_air_pump.off();
         }//如果遥控器信号不好怎么办？
-
-        static uint8_t pneumatic_state[3] = {0};
+        //添加防抖
+        static bool solenoid_off_pending = false;
+        static TickType_t solenoid_off_start_tick = 0;
         uint8_t select_solenoid = 0;
         if (RC_Data.ch2 <= 900) {
           select_solenoid = 0;
@@ -792,8 +793,17 @@ public:
         //1684是最大值
         if(RC_Data.ch4_wheel>1684-400){
             pneumatic::main_solenoid[select_solenoid].on();
+            solenoid_off_pending = false;
         } else if (RC_Data.ch4_wheel <400) {
-          pneumatic::main_solenoid[select_solenoid].off();
+          if (!solenoid_off_pending) {
+            solenoid_off_pending = true;
+            solenoid_off_start_tick = xTaskGetTickCount();
+          } else if (xTaskGetTickCount() - solenoid_off_start_tick >=
+                     pdMS_TO_TICKS(200)) {
+            pneumatic::main_solenoid[select_solenoid].off();
+          }
+        } else {
+          solenoid_off_pending = false;
         }
 
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
