@@ -1049,10 +1049,13 @@ public:
         break;
       case 2:
       {
-        
+        float err=abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad *180.0f/M_PI) ;
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
+         if(launch_time==2){
+          err=abs(motor::MotorWindmill.info_.RealAngle-360.0f- motor::MotorWindmill.target_pos_rad *180.0f/M_PI);
+         }
         // 降下升降机并等待时间到达
-        if(abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad *180.0f/M_PI) < 5.0f){
+        if(err < 5.0f){
           //风车pitch下来 
           NewLoadServorDown();
         }
