@@ -729,7 +729,10 @@ public:
       motor_controller::MotorLoadController[1].target_velocity_ = 0;
       //motor_controller::MotorLoadSyncController.reset();
       // 调试内容写在这里
-
+      motor::MotorWindmill.target_pos_rad = -180*3.1415/180;
+      motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+      float a=motor::MotorWindmill.getRealAngleDeg();
+      float c=motor::MotorWindmill.info_.RealAngle;
       // 摇杆ch1控制舵机
       static float temp_angle = 0;
       if (RC_Data.ch1 > 500 && RC_Data.ch1 < 1500) {
@@ -998,7 +1001,7 @@ public:
       float target_windmill_angle =-180 + launch_time * 90; // 每次发射转盘前进90度
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
-      case 0:
+      case 0://转转盘
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;//确定进入
           //蜂鸣器写在这里 有Bug，不响
@@ -1028,27 +1031,31 @@ public:
           launch_time++;
         }
         break;
-      case 1:
+      case 1://滑台下降，等待到位
         //  装填电机向下运动到装填位置（的后方）
         // 速度不用改，位子也许要改
         base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
-        if (motor_controller::MotorLoadController[0]
+        if ((motor_controller::MotorLoadController[0]
                     .current_angle_with_rounds_ >=
                 CONFIG_MOTOR_LOAD_ANGLE_DOWN |
             motor_controller::MotorLoadController[1]
-                    .current_angle_with_rounds_ >=
-                CONFIG_MOTOR_LOAD_ANGLE_DOWN) {
+                    .current_angle_with_rounds_ >=  
+                CONFIG_MOTOR_LOAD_ANGLE_DOWN)) {
           setTriggerServotoTrigger(); // 扳机，有用，压下去。脉冲
-          NewLoadServorDown();
+         // NewLoadServorDown();
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 2;
           fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
         }
         break;
       case 2:
       {
+        
+         //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
         // 降下升降机并等待时间到达
-        //风车pitch下来
-        NewLoadServorDown();
+        if(abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad *180.0f/M_PI) < 5.0f){
+          //风车pitch下来 
+          NewLoadServorDown();
+        }
         if (xTaskGetTickCount() -
                 fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
             pdMS_TO_TICKS(CONFIG_PITCH_WIND)) {
@@ -1077,10 +1084,21 @@ public:
             pneumatic::main_solenoid[launch_time - 1].off();
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
         }
+        fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
         break;
+
       case 5:
-        //风车pitch运动
+        // 等待一小会，确保装填完成
+        if (xTaskGetTickCount() -
+                fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
+            pdMS_TO_TICKS(CONFIG_PITCH_WIND)) {
+          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 6;
+        }
+        break;
+      case 6:
+          //风车pitch运动
         NewLoadServorUp();
+
         //装填完毕，准备发射
         // 等待Wheel复位
         if (RC_Data.ch4_wheel < 1622) {
