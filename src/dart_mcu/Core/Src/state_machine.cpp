@@ -1084,7 +1084,7 @@ public:
       case 4:
       //关闭对应的气闸门
         if (launch_time >=1&&launch_time<=3){
-            pneumatic::main_solenoid[launch_time - 1].off();
+            pneumatic::main_solenoid[launch_time - 2].off();
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
         }
         fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
