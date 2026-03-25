@@ -28,6 +28,11 @@
 #include "velocimeter.h"
 
 namespace state_machine {
+constexpr float kPi = 3.14159265358979323846f;
+constexpr float kDegToRad = kPi / 180.0f;
+constexpr float kRadToDeg = 180.0f / kPi;
+constexpr float kWindmillStepDeg[4] = {-180.0f, -90.0f, 0.0f, 90.0f};
+
 #define anyMotorDisconnected                                                   \
   (motor::MotorYawLS.motor_state_ == motor::E_MotorState::DISCONNECTED ||      \
    motor::MotorLoad[0].motor_state_ == motor::E_MotorState::DISCONNECTED ||    \
@@ -729,10 +734,7 @@ public:
       motor_controller::MotorLoadController[1].target_velocity_ = 0;
       //motor_controller::MotorLoadSyncController.reset();
       // 调试内容写在这里
-      motor::MotorWindmill.target_pos_rad = -180*3.1415/180;
-      motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-      float a=motor::MotorWindmill.getRealAngleDeg();
-      float c=motor::MotorWindmill.info_.RealAngle;
+     
       // 摇杆ch1控制舵机
       static float temp_angle = 0;
       if (RC_Data.ch1 > 500 && RC_Data.ch1 < 1500) {
@@ -772,16 +774,12 @@ public:
         }
 
         float moto_temp_angle_d = 0.0f;
-        if (state_ch0 == 0) {
-          moto_temp_angle_d = -180.0f;
-        } else if (state_ch0 == 1) {
-          moto_temp_angle_d = -90.0f;
-        } else if (state_ch0 == 3) {
-          moto_temp_angle_d = 90.0f;
+        if (state_ch0 >= 0 && state_ch0 < 4) {
+          moto_temp_angle_d = kWindmillStepDeg[state_ch0];
         }
         
-        motor::MotorWindmill.target_pos_rad = moto_temp_angle_d/180.0*3.1415;
-        float temp_angle_d =motor::MotorWindmill.target_pos_rad * 180 / 3.14159;
+        motor::MotorWindmill.target_pos_rad = moto_temp_angle_d * kDegToRad;
+        float temp_angle_d =motor::MotorWindmill.target_pos_rad * kRadToDeg;
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
         
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
@@ -997,16 +995,17 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
       soundEffectManager.clearSoundEffects();   // 关键：先打断旧音乐
-      static int launch_time =0; // 发射次数是0->1->2-3其中第0次发射不需要控制装填机构
-      float target_windmill_angle =-180 + launch_time * 90; // 每次发射转盘前进90度
+      static int launch_time =0; // 下一次发射的步号: 0->1->2->3 循环
+      static int launch_step_this_cycle = 0; // 本轮装填/关阀使用的步号快照
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0://转转盘
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;//确定进入
+          launch_step_this_cycle = launch_time;
           //蜂鸣器写在这里 有Bug，不响
           soundEffectManager.clearSoundEffects(); // 关键：先打断旧音乐
-          int beep_count = launch_time + 1; // 保证第一次也有声音
+          int beep_count = launch_step_this_cycle + 1; // 保证第一次也有声音
           if (beep_count < 1)
             beep_count = 1;
           if (beep_count > 3)
@@ -1016,19 +1015,14 @@ public:
           }
           //蜂鸣器这里结束
           // 首先初处理风车位子，即转盘前进一个格子
-          if(launch_time==0){
-              motor::MotorWindmill.target_pos_rad = -180*3.1415/180;
+            if (launch_step_this_cycle >= 0 && launch_step_this_cycle < 4) {
+              motor::MotorWindmill.target_pos_rad = kWindmillStepDeg[launch_step_this_cycle] * kDegToRad;
+            }
+            if(launch_step_this_cycle==0){
               fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=5;//第一次发射不需要控制装填机构，直接返回等待下一次发射指令
-          }else if(launch_time==1){
-              motor::MotorWindmill.target_pos_rad = -90*3.1415/180;
-          }else if(launch_time==2){
-              motor::MotorWindmill.target_pos_rad = 0;
-          }else if(launch_time==3){
-              motor::MotorWindmill.target_pos_rad = 90*3.1415/180;
-              launch_time=0;//发射次数回到0下一个循环
           }
           motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-          launch_time++;
+          launch_time = (launch_time + 1) % 4;
         }
         break;
       case 1://滑台下降，等待到位
@@ -1049,10 +1043,10 @@ public:
         break;
       case 2:
       {
-        float err=abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad *180.0f/M_PI) ;
+        float err=abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
-         if(launch_time==2){
-          err=abs(motor::MotorWindmill.info_.RealAngle-360.0f- motor::MotorWindmill.target_pos_rad *180.0f/M_PI);
+         if(launch_step_this_cycle==1){
+          err=abs(motor::MotorWindmill.info_.RealAngle-360.0f- motor::MotorWindmill.target_pos_rad * kRadToDeg);
          }
         // 降下升降机并等待时间到达
         if(err < 5.0f){
@@ -1083,10 +1077,10 @@ public:
         break;
       case 4:
       //关闭对应的气闸门
-        if (launch_time >=1&&launch_time<=3){
-            pneumatic::main_solenoid[launch_time - 2].off();
-        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
+        if (launch_step_this_cycle >= 1 && launch_step_this_cycle <= 3) {
+          pneumatic::main_solenoid[launch_step_this_cycle - 1].off();
         }
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
         fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
         break;
 
