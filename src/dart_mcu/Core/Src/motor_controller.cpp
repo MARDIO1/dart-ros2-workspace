@@ -165,13 +165,14 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
                                true); // 装填电机2
     // DM4310 初始化：与其他电机一同创建
     motor::MotorWindmill.create(0x11,2);
+    motor::MotorLift.create(0x12,2);
     while (
         motor::MotorYawLS.motor_state_ == motor::E_MotorState::DISCONNECTED ||
         motor::MotorLoad[0].motor_state_ == motor::E_MotorState::DISCONNECTED ||
         motor::MotorLoad[1].motor_state_ == motor::E_MotorState::DISCONNECTED ||
         motor::MotorTriggerLS.motor_state_ == motor::E_MotorState::DISCONNECTED)
         vTaskDelayUntil(&xLastWakeTime, 100);
-    motor::MotorLift.create(0x12,2);
+    
     while (true)
     {
         {
