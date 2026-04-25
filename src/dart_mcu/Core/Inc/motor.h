@@ -142,7 +142,7 @@ extern motor_rm MotorLoad[2];   // 装填电机
 
 // DM wrapper instance (optional)
 extern motor_dm MotorWindmill;
-
+extern motor_dm MotorLift;
 } // namespace motor
 
 #endif // DART_MCU_MOTOR_H

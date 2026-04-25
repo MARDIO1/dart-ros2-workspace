@@ -588,6 +588,7 @@ public:
 
     // 主动失能仅针对 DM4310：关闭/断开 DM4310 输出（安全起见）
     motor::MotorWindmill.close();
+    motor::MotorLift.close();
   }
 
   void update(OpenFSM &fsm) const override {
@@ -642,6 +643,7 @@ public:
 
     //这里，退出保护还要使能DM4310输出
     motor::MotorWindmill.open();
+    motor::MotorLift.open();
   }
 };
 
@@ -794,7 +796,7 @@ public:
         motor::MotorWindmill.target_pos_rad = moto_temp_angle_d * kDegToRad;
         float temp_angle_d =motor::MotorWindmill.target_pos_rad * kRadToDeg;
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-        
+        motor::MotorLift.setpos(0.0f);
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
@@ -1086,7 +1088,8 @@ public:
                 CONFIG_MOTOR_LOAD_ANGLE_WIND) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
           setLoadServotoUP();
-          //setTriggerServotoReload();//堵住准备发射 先别搞，我只是想自动装填
+          //setTriggerServotoRel
+          // 】、oad();//堵住准备发射 先别搞，我只是想自动装填
         }
         break;
       case 4:

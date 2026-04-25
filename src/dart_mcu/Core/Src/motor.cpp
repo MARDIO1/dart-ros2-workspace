@@ -31,10 +31,14 @@ void motor::motor_dm::my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8
   TxHeader.RTR = CAN_RTR_DATA;
   TxHeader.DLC = 8;
   TxHeader.TransmitGlobalTime = DISABLE;
-  if (CAN_ID == 1)
+  if (CAN_ID == 1) {
+    while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0); // 防丢包处理
     HAL_CAN_AddTxMessage(&hcan1, &TxHeader, data, &TxMailbox);
-  if (CAN_ID == 2)
+  }
+  if (CAN_ID == 2) {
+    while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) == 0); // 防丢包处理
     HAL_CAN_AddTxMessage(&hcan2, &TxHeader, data, &TxMailbox);
+  }
 }
 
   // global DM driver struct removed; motor_dm now owns its own motor_t member (info_)
@@ -47,6 +51,7 @@ motor_rm MotorLoad[2];   // 装填电机
 
 // DM motor wrapper instance (if needed by user code)
 motor_dm MotorWindmill;
+motor_dm MotorLift;
 
 void update_can_array(uint8_t *aData, uint8_t id, int16_t output) {
   aData[id * 2] = (uint8_t)(output >> 8);

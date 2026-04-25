@@ -4,6 +4,7 @@
 
 #include "motor_controller.h"
 #include "cstring"
+#include "motor.h"
 #include "state_machine.h"
 #include <cstdint>
 
@@ -170,7 +171,7 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
         motor::MotorLoad[1].motor_state_ == motor::E_MotorState::DISCONNECTED ||
         motor::MotorTriggerLS.motor_state_ == motor::E_MotorState::DISCONNECTED)
         vTaskDelayUntil(&xLastWakeTime, 100);
-
+    motor::MotorLift.create(0x12,2);
     while (true)
     {
         {
@@ -191,6 +192,7 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             motor::update_can_array(can_array, 2,
                                     motor::MotorLoad[1].updateCurrent());
 
+            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0);
             HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
 
             memset(can_array, 0, 8);
@@ -198,6 +200,7 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             update_controller_current(motor::MotorYawLS, MotorYawLSController);
             motor::update_can_array(can_array, 3,
                                     motor::MotorYawLS.updateCurrent());
+            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0);
             HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
         }
         {
@@ -206,6 +209,7 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             memset(can_array, 0, 8);
             tx_header.StdId = 0x2fe;
             // Update Controller
+            while(HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) == 0);
             HAL_CAN_AddTxMessage(&hcan2, &tx_header, can_array, &tx_mailbox);
             //在保护和boot状态下不要使能
             bool protect = (state_machine::dart_fsm.openFSM_.focusEState() ==
@@ -216,11 +220,16 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             temp_count++;
             if (protect) {
               motor::MotorWindmill.close();
+              motor::MotorLift.close();
             } else {
-            if(temp_count%10==0)
+            if(temp_count%10==0){
                 motor::MotorWindmill.open();
-                else motor::MotorWindmill.updatemove();
+                motor::MotorLift.open();
+            }else {
+                motor::MotorWindmill.updatemove();
+                motor::MotorLift.updatemove();
             }
+        }
         }
         {
             // 更新同步控制器
