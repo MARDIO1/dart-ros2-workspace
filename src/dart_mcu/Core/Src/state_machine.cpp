@@ -166,6 +166,12 @@ constexpr float kWindmillStepDeg[4] = {-180.0f, -90.0f, 0.0f, 90.0f};
     led::main_led_strip.show();                                                  \
   } while (0)
 
+#define CloseFan()do {                                                                         \
+    for(uint16_t i = 0; i < led::main_led_strip.get_num_pixels(); i++) {        \
+      led::main_led_strip.set_pixel_color(i, 0, 0, 0);                    \
+    }                                                                            \
+    led::main_led_strip.show();                                                  \
+  } while (0)
 #ifndef pdTICKS_TO_S
 #define pdTICKS_TO_S(xTicks) ((xTicks) / configTICK_RATE_HZ)
 #endif
@@ -232,7 +238,6 @@ void FSM::update() {
   // 状态机更新
   openFSM_.update();
   micro_switch_read();//读限位开关
-  OpenFan();
       // 遥控看门狗
       static TickType_t last_reset_tick = xTaskGetTickCount();
   if (xTaskGetTickCount() - RC_Data.last_update_time > pdMS_TO_TICKS(1000) &&
@@ -824,6 +829,7 @@ public:
         }
 
     } else if (RC_Data.Switch_Left == RC_SW_MID) {
+      CloseFan();
       fsm.custom<Dart_FSM>()->launch_operating_ = false;
       // 扳机锁定在初始位置，不可触发操作，可以操作Yaw、Load电机和扳机丝杆
       //yaw不用改
@@ -1117,6 +1123,7 @@ public:
       motor_controller::MotorLoadController[1].target_velocity_ =
           base_velocity - motor_controller::MotorLoadSyncController.output;
     } else if (RC_Data.Switch_Left == RC_SW_DOWN) {
+      OpenFan();
       int16_t base_velocity = 0;
       if (motor_controller::MotorYawLSController.state_ !=
           motor_controller::E_PID_Velocity_Angle_Controller_State::
