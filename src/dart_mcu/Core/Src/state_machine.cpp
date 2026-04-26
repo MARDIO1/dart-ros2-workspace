@@ -97,7 +97,6 @@ constexpr float kWindmillStepDeg[4] = {-180.0f, -90.0f, 0.0f, 90.0f};
     trigger_servo[3].enable();                                                 \
     trigger_servo[4].enable();                                                 \
     trigger_servo[5].enable();                                                 \
-    trigger_servo[7].enable();                                                 \
   } while (0)
 
 #define disableLoadServo()                                                     \
@@ -106,7 +105,6 @@ constexpr float kWindmillStepDeg[4] = {-180.0f, -90.0f, 0.0f, 90.0f};
     trigger_servo[3].disable();                                                \
     trigger_servo[4].disable();                                                \
     trigger_servo[5].disable();                                                \
-    trigger_servo[7].disable();                                                \
   } while (0)
 
 #define setLoadServotoUP()                                                     \
@@ -146,12 +144,12 @@ constexpr float kWindmillStepDeg[4] = {-180.0f, -90.0f, 0.0f, 90.0f};
   } while (0)
 #define NewLoadServorUp()                                                      \
   do {                                                                         \
-    trigger_servo[7].setAngle(PITCH_ANGLE_UP);                               \
+    motor::MotorLift.setpos(PITCH_ANGLE_UP);                               \
   } while (0)
 
 #define NewLoadServorDown()                                                    \
   do {                                                                         \
-    trigger_servo[7].setAngle(PITCH_ANGLE_DOWN);                               \
+    motor::MotorLift.setpos(PITCH_ANGLE_DOWN);                               \
   } while (0)
 
 #define simulateDartGateState()                                                \
@@ -750,17 +748,17 @@ public:
       //motor_controller::MotorLoadSyncController.reset();
       // 调试内容写在这里
      
-      // 摇杆ch1控制舵机
-      static float temp_angle = 0;
+      // 摇杆ch1控制lift电机
+      static float temp_angle_rad = 0;
       if (RC_Data.ch1 > 500 && RC_Data.ch1 < 1500) {
-        temp_angle = temp_angle;
+        temp_angle_rad = temp_angle_rad;
         } else if (RC_Data.ch1 <= 500){
-          temp_angle = PITCH_ANGLE_DOWN;
+          temp_angle_rad = PITCH_ANGLE_DOWN;
           
         } else if (RC_Data.ch1 >= 1500){
-          temp_angle = PITCH_ANGLE_UP;
+          temp_angle_rad = PITCH_ANGLE_UP;
         }
-        trigger_servo[7].setAngle((uint16_t)temp_angle);
+        motor::MotorLift.setpos(temp_angle_rad);
 
         //ch0控制电机
         // 三档离散：0/1/2 -> -60/30/120
@@ -796,7 +794,6 @@ public:
         motor::MotorWindmill.target_pos_rad = moto_temp_angle_d * kDegToRad;
         float temp_angle_d =motor::MotorWindmill.target_pos_rad * kRadToDeg;
         motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
-        motor::MotorLift.setpos(0.0f);
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
@@ -1088,8 +1085,7 @@ public:
                 CONFIG_MOTOR_LOAD_ANGLE_WIND) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
           setLoadServotoUP();
-          //setTriggerServotoRel
-          // 】、oad();//堵住准备发射 先别搞，我只是想自动装填
+          //setTriggerServotoReload();//堵住准备发射 先别搞，我只是想自动装填
         }
         break;
       case 4:
