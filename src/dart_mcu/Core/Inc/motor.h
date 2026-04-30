@@ -106,7 +106,7 @@ public:
     info_.Reductionratio = MOTORDM4310_Reductionratio;
     target_vel_radps = 0.6f;
     target_pos_rad = 0.0f;
-    standerd_angle_rad = +(17+30) / 180.0 * 3.1415926;//这里调节校准
+    standerd_angle_rad = 0.0f;//这里调节校准
     }
 
     void open() { DM_motorOpen(motor_id_, can_id_); }
