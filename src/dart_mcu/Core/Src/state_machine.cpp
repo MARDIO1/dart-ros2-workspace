@@ -144,12 +144,12 @@ constexpr float kWindmillStepDeg[4] = {0.0f, 90.0f, 180.0f, 270.0f};
   } while (0)
 #define NewLoadServorUp()                                                      \
   do {                                                                         \
-    motor::MotorLift.setpos(PITCH_ANGLE_UP);                               \
+    motor::MotorLift.setpos(PITCH_ANGLE_UP, CONFIG_DM_LIFT_VELOCITY_RADPS);                               \
   } while (0)
 
 #define NewLoadServorDown()                                                    \
   do {                                                                         \
-    motor::MotorLift.setpos(PITCH_ANGLE_DOWN);                               \
+    motor::MotorLift.setpos(PITCH_ANGLE_DOWN, CONFIG_DM_LIFT_VELOCITY_RADPS);                               \
   } while (0)
 
 #define simulateDartGateState()                                                \
@@ -758,7 +758,7 @@ public:
         } else if (RC_Data.ch1 >= 1500){
           temp_angle_rad = PITCH_ANGLE_UP;
         }
-        motor::MotorLift.setpos(temp_angle_rad);
+        motor::MotorLift.setpos(temp_angle_rad, CONFIG_DM_LIFT_VELOCITY_RADPS);
 
         //ch0控制电机
         // 三档离散：0/1/2 -> -60/30/120
@@ -793,7 +793,7 @@ public:
         
         motor::MotorWindmill.target_pos_rad = moto_temp_angle_d * kDegToRad;
         float temp_angle_d =motor::MotorWindmill.target_pos_rad * kRadToDeg;
-        motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+        motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad, CONFIG_DM_WINDMILL_VELOCITY_RADPS);
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
@@ -1023,7 +1023,7 @@ public:
             if(launch_step_this_cycle==0){
               fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=5;//第一次发射不需要控制装填机构，直接返回等待下一次发射指令
           }
-          motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad);
+          motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad, CONFIG_DM_WINDMILL_VELOCITY_RADPS);
           launch_time = (launch_time + 1) % 4;
         }
         break;

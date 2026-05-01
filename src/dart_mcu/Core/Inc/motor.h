@@ -117,7 +117,9 @@ public:
     
     void decodeCanMsg(const uint8_t *rxData) {DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));}
 
-    void setpos(float pos_rad) { target_pos_rad = pos_rad+standerd_angle_rad; }
+    void setpos(float pos_rad, float vel_radps) { target_pos_rad = pos_rad+standerd_angle_rad;
+    target_vel_radps = vel_radps;
+    }
 
     float getRealAngleDeg() const { return info_.RealAngle; }
 
