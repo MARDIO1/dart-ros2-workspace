@@ -32,7 +32,7 @@ namespace state_machine {
 constexpr float kPi = 3.14159265358979323846f;
 constexpr float kDegToRad = kPi / 180.0f;
 constexpr float kRadToDeg = 180.0f / kPi;
-constexpr float kWindmillStepDeg[4] = {-180.0f, -90.0f, 0.0f, 90.0f};
+constexpr float kWindmillStepDeg[4] = {0.0f, 90.0f, 180.0f, 270.0f};
 
 #define anyMotorDisconnected                                                   \
   (motor::MotorYawLS.motor_state_ == motor::E_MotorState::DISCONNECTED ||      \
@@ -980,7 +980,7 @@ public:
         }
         break;
       case 2:
-        // 等待一小会，舵机到位
+        // 等待一小会，抬升电机到位
         if (xTaskGetTickCount() -
                 fsm.custom<Dart_FSM>()->ActionGeneral_Timer3_ >
             pdMS_TO_TICKS(CONFIG_TRIGGER_SERVO_WAIT_TIME)) {
@@ -1016,17 +1016,6 @@ public:
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;//确定进入
           launch_step_this_cycle = launch_time;
-          //蜂鸣器写在这里 有Bug，不响
-          soundEffectManager.clearSoundEffects(); // 关键：先打断旧音乐
-          int beep_count = launch_step_this_cycle + 1; // 保证第一次也有声音
-          if (beep_count < 1)
-            beep_count = 1;
-          if (beep_count > 3)
-            beep_count = 3;
-          for (int i = 0; i < beep_count; ++i) {
-            choose_sound_effect(BuzzerSound::BuzzerWarn);
-          }
-          //蜂鸣器这里结束
           // 首先初处理风车位子，即转盘前进一个格子
             if (launch_step_this_cycle >= 0 && launch_step_this_cycle < 4) {
               motor::MotorWindmill.target_pos_rad = kWindmillStepDeg[launch_step_this_cycle] * kDegToRad;
@@ -1058,9 +1047,7 @@ public:
       {
         float err=abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
-         if(launch_step_this_cycle==1){
-          err=abs(motor::MotorWindmill.info_.RealAngle-360.0f- motor::MotorWindmill.target_pos_rad * kRadToDeg);
-         }
+      
         // 降下升降机并等待时间到达
         if(err < 5.0f){
           //风车pitch下来 
