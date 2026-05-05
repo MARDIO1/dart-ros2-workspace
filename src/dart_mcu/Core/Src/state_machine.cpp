@@ -32,7 +32,7 @@ namespace state_machine {
 constexpr float kPi = 3.14159265358979323846f;
 constexpr float kDegToRad = kPi / 180.0f;
 constexpr float kRadToDeg = 180.0f / kPi;
-constexpr float kWindmillStepDeg[4] = {0.0f, 90.0f, 180.0f, 270.0f};
+constexpr float kWindmillStepDeg[4] = {180.0f, 90.85f, 2.02f, -88.40f};
 
 #define anyMotorDisconnected                                                   \
   (motor::MotorYawLS.motor_state_ == motor::E_MotorState::DISCONNECTED ||      \
@@ -791,9 +791,7 @@ public:
           moto_temp_angle_d = kWindmillStepDeg[state_ch0];
         }
         
-        motor::MotorWindmill.target_pos_rad = moto_temp_angle_d * kDegToRad;
-        float temp_angle_d =motor::MotorWindmill.target_pos_rad * kRadToDeg;
-        motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad, CONFIG_DM_WINDMILL_VELOCITY_RADPS);
+        motor::MotorWindmill.setposDeg(moto_temp_angle_d, CONFIG_DM_WINDMILL_VELOCITY_RADPS);
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
@@ -1018,12 +1016,11 @@ public:
           launch_step_this_cycle = launch_time;
           // 首先初处理风车位子，即转盘前进一个格子
             if (launch_step_this_cycle >= 0 && launch_step_this_cycle < 4) {
-              motor::MotorWindmill.target_pos_rad = kWindmillStepDeg[launch_step_this_cycle] * kDegToRad;
+              motor::MotorWindmill.setposDeg(kWindmillStepDeg[launch_step_this_cycle], CONFIG_DM_WINDMILL_VELOCITY_RADPS);
             }
             if(launch_step_this_cycle==0){
               fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=5;//第一次发射不需要控制装填机构，直接返回等待下一次发射指令
           }
-          motor::MotorWindmill.setpos(motor::MotorWindmill.target_pos_rad, CONFIG_DM_WINDMILL_VELOCITY_RADPS);
           launch_time = (launch_time + 1) % 4;
         }
         break;
@@ -1045,7 +1042,7 @@ public:
         break;
       case 2:
       {
-        float err=abs(motor::MotorWindmill.info_.RealAngle- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
+        float err=abs(motor::MotorWindmill.info_.current_angle_with_circle_- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
         // 降下升降机并等待时间到达
         if(err < 5.0f){
@@ -1719,7 +1716,7 @@ void enter(OpenFSM &fsm) const override{
         //计算目标位置
         {
           int launch_step=msgDartStatus.dart_launch_process%4;
-          motor::MotorWindmill.target_pos_rad=kWindmillStepDeg[launch_step]*kDegToRad;
+          motor::MotorWindmill.setposDeg(kWindmillStepDeg[launch_step], CONFIG_DM_WINDMILL_VELOCITY_RADPS);
 
           if(launch_step==0){
             fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=5;

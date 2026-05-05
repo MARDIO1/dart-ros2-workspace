@@ -29,6 +29,7 @@ typedef struct {
     int16_t Realcirnum;         // 实际圈数
     float RealAngle;            // 实际角度 (°)
     float Realrotationrate;     // 实际转速 (rps)
+    float current_angle_with_circle_; // 累计角度 = circle * 360 + RealAngle (°)
     
     Motor_Feedback_Data_t FeedbackData; // 反馈数据
 } motor_t;

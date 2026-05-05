@@ -121,7 +121,14 @@ public:
     target_vel_radps = vel_radps;
     }
 
+    void setposDeg(float pos_deg, float vel_radps) {
+      target_pos_rad = pos_deg * 3.14159265f / 180.0f + standerd_angle_rad;
+      target_vel_radps = vel_radps;
+    }
+
     float getRealAngleDeg() const { return info_.RealAngle; }
+
+    float getAngleWithCircle() const { return info_.current_angle_with_circle_; }
 
     void updatemove() { speedPositionControl(target_pos_rad, target_vel_radps); }
 
