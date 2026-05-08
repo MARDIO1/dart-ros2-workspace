@@ -1,43 +1,36 @@
 //
 // Created by cheny on 24-9-18.
 //
-/*mardio change26.3.7进度全完蛋*/
+
 #ifndef DART_MCU_DART_CONFIG_H
 #define DART_MCU_DART_CONFIG_H
 
+#include "stdint.h"
 #include "dart_msgs/msg/dart_launcher_params.h"
 #include "dart_msgs/msg/dart_launcher_status.h"
 #include "dart_msgs/msg/green_light.h"
-#include "stdint.h"
 
 // 比赛模式相关
 #define CONFIG_FORCE_WAIT_FOR_GAME_PROGRESS 0
-// 开舱门自瞄时间 准备删除
+// 开舱门自瞄时间
 #define CONFIG_AUTOAIM_TIMEOUT_MS 1000
 
-// 时间相关 需要删改
+// 时间相关
 #define CONFIG_SLIDE_SERVO_SLIDE_TIME 800
 #define CONFIG_SLIDE_SERVO_WAIT_TIME 300
-#define CONFIG_TRIGGER_SERVO_WAIT_TIME 1000
+#define CONFIG_TRIGGER_SERVO_WAIT_TIME 500
 #define CONFIG_LIFT_WAIT_TIME 700
-#define CONFIG_PITCH_WIND 2000
-
 #define CONFIG_LAUNCH_WAIT_TIME 800
 #define CONFIG_LAUNCH_WAIT_MOTOR_STABLE_TIME 500
-/* 新的装填机制:
-原版发射->滑台到安装位置前方->大摆锤旋转到安装角度->总线舵机工作->滑台移动主动安装镖体->吸盘气阀打开->滑台往后->大摆锤旋转到允许发射角度->原版发射
 
-*/
-// 丝杆电机复位堵转速度 应该不用改
+// 丝杆电机复位堵转速度
 #define CONFIG_TARGET_RESET_VELOCITY_YAWLS -70
 #define CONFIG_TARGET_RESET_VELOCITY_TRIGGERLS -5000
 #define CONFIG_GATE_VELOCITY_TRIGGERLS 500
 #define CONFIG_GATE_CURRENT_TRIGGERLS 2000
 #define CONFIG_GATE_CURRENT_LOAD 10
 #define CONFIG_TIMEOUT_RESET_TRIGGER 100
-//风车抬头电机角度定义
-#define PITCH_ANGLE_DOWN 0.0f
-#define PITCH_ANGLE_UP 0.55f
+
 // 该角度直接触发击发，0代表左边的，1代表右边的舵机（后视）
 #define CONFIG_TRIGGER_SERVO_TRIGGER_ANGLE_0 95
 #define CONFIG_TRIGGER_SERVO_TRIGGER_ANGLE_1 35
@@ -47,6 +40,7 @@
 // 该角度为升降机在上时左右侧舵机的角度
 #define CONFIG_LOAD_SERVO_UP_ANGLE_0 190
 #define CONFIG_LOAD_SERVO_UP_ANGLE_1 80
+
 
 // 该角度为升降机在下时左右侧舵机的角度
 #define CONFIG_LOAD_SERVO_DOWN_ANGLE_0 67
@@ -65,29 +59,20 @@
 #define CONFIG_MOTOR_TRIGGER_ANGLE_MAX 8192
 #define CONFIG_MOTOR_LOAD_ANGLE_MAX 8192
 
+
 // 特殊电机角度定义
 #define CONFIG_MOTOR_YAWLS_ANGLE_MIN 10000
 #define CONFIG_MOTOR_YAWLS_ANGLE_MAX 110000
 #define CONFIG_MOTOR_LOAD_ANGLE_UP 55000
-#define CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD 425000//老版本安装位子
-
-#define CONFIG_MOTOR_LOAD_ANGLE_INSTALL_PUSH                                  \
-	(CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD - 60000)
-
-#define CONFIG_MOTOR_LOAD_ANGLE_DOWN 400000//第一次，吸盘后方一点的，
-#define CONFIG_MOTOR_LOAD_ANGLE_WIND 300000//第二次，吸盘位子，
-#define CONFIG_MOTOR_LOAD_ANGLE_LAUNCH 700000 // 第三次往后拉到扳机后方
-
+#define CONFIG_MOTOR_LOAD_ANGLE_POST_LOAD 425000
+#define CONFIG_MOTOR_LOAD_ANGLE_DOWN 950000
 #define CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_UP 20000
 #define CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN 1070000
 #define CONFIG_MOTOR_LOAD_LOOSEN_OFFSET 0
 
 // 运动速度定义
-#define CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD 4000//原来是6000
- // 风车旋转速度
-#define CONFIG_DM_WINDMILL_VELOCITY_RADPS  3.5f 
- // 升降机速度  
-#define CONFIG_DM_LIFT_VELOCITY_RADPS      1.5f  
+#define CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD 6000
+
 // Publisher定义
 #define LOG_BUF_LEN 128
 // 队列长度
@@ -102,4 +87,4 @@ extern dart_msgs__msg__DartLauncherParams msgDartProtocols;
 extern dart_msgs__msg__GreenLight msgGreenLight;
 extern dart_msgs__msg__DartLauncherStatus msgDartStatus;
 
-#endif // DART_MCU_DART_CONFIG_H
+#endif //DART_MCU_DART_CONFIG_H

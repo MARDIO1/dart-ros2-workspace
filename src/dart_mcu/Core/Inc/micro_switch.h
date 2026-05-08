@@ -9,13 +9,12 @@
 
 // 高电平触发
 #define Yaw_Switch_GPIO_Port GPIOA
-#define Yaw_Switch_Pin GPIO_PIN_1
+#define Yaw_Switch_Pin GPIO_PIN_0
 
 #define Trigger_Switch_GPIO_Port GPIOA
 #define Trigger_Switch_Pin GPIO_PIN_2
 
-enum E_Lead_Screw_Switch_State
-{
+enum E_Lead_Screw_Switch_State {
     Untriggered,
     Triggered
 };
@@ -25,4 +24,4 @@ extern E_Lead_Screw_Switch_State trigger_switch_state;
 
 void micro_switch_read();
 
-#endif // DART_MCU_MICRO_SWITCH_H
+#endif //DART_MCU_MICRO_SWITCH_H

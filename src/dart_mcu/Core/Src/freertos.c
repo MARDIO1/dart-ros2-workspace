@@ -47,11 +47,9 @@ bool cubemx_transport_open(struct uxrCustomTransport *transport);
 
 bool cubemx_transport_close(struct uxrCustomTransport *transport);
 
-size_t cubemx_transport_write(struct uxrCustomTransport *transport,
-                              const uint8_t *buf, size_t len, uint8_t *err);
+size_t cubemx_transport_write(struct uxrCustomTransport *transport, const uint8_t *buf, size_t len, uint8_t *err);
 
-size_t cubemx_transport_read(struct uxrCustomTransport *transport, uint8_t *buf,
-                             size_t len, int timeout, uint8_t *err);
+size_t cubemx_transport_read(struct uxrCustomTransport *transport, uint8_t *buf, size_t len, int timeout, uint8_t *err);
 
 /* USER CODE END FunctionPrototypes */
 
@@ -66,11 +64,11 @@ void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName);
 /* USER CODE BEGIN 4 */
 void vApplicationStackOverflowHook(xTaskHandle xTask, signed char *pcTaskName)
 {
-    /* Run time stack overflow checking is performed if
-    configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
-    called if a stack overflow is detected. */
-    // 将蜂鸣器拉响 htim12 Channel
-    __HAL_TIM_SET_COMPARE(&htim12, TIM_CHANNEL_1, 1000);
+   /* Run time stack overflow checking is performed if
+   configCHECK_FOR_STACK_OVERFLOW is defined to 1 or 2. This hook function is
+   called if a stack overflow is detected. */
+   // 将蜂鸣器拉响 htim12 Channel
+   __HAL_TIM_SET_COMPARE(&htim12, TIM_CHANNEL_1, 1000);
 }
 /* USER CODE END 4 */
 
@@ -116,10 +114,10 @@ void MX_FREERTOS_Init(void) {
 
 /* USER CODE BEGIN Header_StartDefaultTask */
 /**
- * @brief  Function implementing the defaultTask thread.
- * @param  argument: Not used
- * @retval None
- */
+  * @brief  Function implementing the defaultTask thread.
+  * @param  argument: Not used
+  * @retval None
+  */
 /* USER CODE END Header_StartDefaultTask */
 void StartDefaultTask(void *argument)
 {

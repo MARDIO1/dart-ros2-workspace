@@ -2,8 +2,8 @@
 // Created by cheny on 24-6-29.
 //
 #include "dbus.h"
-#include "cmsis_os.h"
 #include "usart.h"
+#include "cmsis_os.h"
 
 RCDecoding_Type RC_Data;
 uint8_t RC_Rx_Mem = 0;
@@ -36,8 +36,7 @@ void DT7_init()
 
 void DT7_Reset()
 {
-    HAL_UARTEx_ReceiveToIdle_DMA(RC_UART_HANDLE, RC_UART_RXBUFFER,
-                                 RC_UART_BUFFER_LENGTH);
+    HAL_UARTEx_ReceiveToIdle_DMA(RC_UART_HANDLE, RC_UART_RXBUFFER, RC_UART_BUFFER_LENGTH);
 }
 
 #define DEBOUNCE_THRESHOLD 5
@@ -48,10 +47,9 @@ void DT7_Decode()
     static uint8_t last_Switch_Left = RC_SW_UP;
     static uint8_t debounce_counter_Right = 0;
     static uint8_t debounce_counter_Left = 0;
-
+    
     // 确保缓冲区数据有效
-    if (RC_rx_buffer == NULL)
-    {
+    if (RC_rx_buffer == NULL) {
         return;
     }
 
@@ -97,23 +95,18 @@ void DT7_Decode()
     }
     last_Switch_Left = current_Switch_Left;
 
-    RC_Data.ch0 =
-        ((RC_rx_buffer[0] | (RC_rx_buffer[1] << 8)) & 0x07ff); // Channel 0
-    RC_Data.ch1 = (((RC_rx_buffer[1] >> 3) | (RC_rx_buffer[2] << 5)) &
-                   0x07ff); // Channel 1
+    RC_Data.ch0 = ((RC_rx_buffer[0] | (RC_rx_buffer[1] << 8)) & 0x07ff);        // Channel 0
+    RC_Data.ch1 = (((RC_rx_buffer[1] >> 3) | (RC_rx_buffer[2] << 5)) & 0x07ff); // Channel 1
     RC_Data.ch2 = (((RC_rx_buffer[2] >> 6) | (RC_rx_buffer[3] << 2) |
                     (RC_rx_buffer[4] << 10)) &
-                   0x07ff); // Channel 2
-    RC_Data.ch3 = (((RC_rx_buffer[4] >> 1) | (RC_rx_buffer[5] << 7)) &
-                   0x07ff); // Channel 3
+                   0x07ff);                                                     // Channel 2
+    RC_Data.ch3 = (((RC_rx_buffer[4] >> 1) | (RC_rx_buffer[5] << 7)) & 0x07ff); // Channel 3
     RC_Data.ch4_wheel = ((RC_rx_buffer[16] | (RC_rx_buffer[17] << 8)) & 0x07ff);
-    RC_Data.mouse.x = RC_rx_buffer[6] | (RC_rx_buffer[7] << 8); // Mouse X axis
-    RC_Data.mouse.y = RC_rx_buffer[8] | (RC_rx_buffer[9] << 8); // Mouse Y axis
-    RC_Data.mouse.z =
-        RC_rx_buffer[10] | (RC_rx_buffer[11] << 8); // Mouse Z axis
+    RC_Data.mouse.x = RC_rx_buffer[6] | (RC_rx_buffer[7] << 8);   // Mouse X axis
+    RC_Data.mouse.y = RC_rx_buffer[8] | (RC_rx_buffer[9] << 8);   // Mouse Y axis
+    RC_Data.mouse.z = RC_rx_buffer[10] | (RC_rx_buffer[11] << 8); // Mouse Z axis
 
-    RC_Data.mouse.press_left = RC_rx_buffer[12];  // Mouse Left Pressed
-    RC_Data.mouse.press_right = RC_rx_buffer[13]; // Mouse Right Pressed
-    RC_Data.key_board.key_code =
-        RC_rx_buffer[14] | (RC_rx_buffer[15] << 8); // KeyBoard value
+    RC_Data.mouse.press_left = RC_rx_buffer[12];                             // Mouse Left Pressed
+    RC_Data.mouse.press_right = RC_rx_buffer[13];                            // Mouse Right Pressed
+    RC_Data.key_board.key_code = RC_rx_buffer[14] | (RC_rx_buffer[15] << 8); // KeyBoard value
 }
