@@ -1,19 +1,19 @@
 #ifndef __DBUS_H
 #define __DBUS_H
 
-#include "main.h"
 #include "FreeRTOS.h"
 #include "event_groups.h"
+#include "main.h"
 #include "task.h"
 
 #define MEMORY0 0
 #define MEMORY1 1
 #define MEMORYRESET 2
 
-#define EVENT_GROUP_BIT_DT7            (1UL << 1UL)
+#define EVENT_GROUP_BIT_DT7 (1UL << 1UL)
 
 /** DMA Data Length**/
-#define RC_FRAME_LEN 18U     // Length of received data per frame
+#define RC_FRAME_LEN 18U      // Length of received data per frame
 #define RC_FRAME_LEN_BACK 32U // Extra length for stability
 #define RC_CH_MAX_RELATIVE 660.0f
 
@@ -83,18 +83,20 @@
 #define KEY_PRESSED_OFFSET_V ((uint16_t)0x01 << 14)
 #define KEY_PRESSED_OFFSET_B ((uint16_t)0x01 << 15)
 
-struct RCDecoding_Type {
+struct RCDecoding_Type
+{
     uint16_t RCFrameCounter;
 
-    uint16_t ch0; // ��ҡ��X��
-    uint16_t ch1; // ��ҡ��Y��
-    uint16_t ch2; // ��ҡ��X��
-    uint16_t ch3; // ��ҡ��Y��
+    uint16_t ch0;       // ��ҡ��X��
+    uint16_t ch1;       // ��ҡ��Y��
+    uint16_t ch2;       // ��ҡ��X��
+    uint16_t ch3;       // ��ҡ��Y��
     uint16_t ch4_wheel; // Wheel
     uint8_t Switch_Right;
     uint8_t Switch_Left;
 
-    struct {
+    struct
+    {
         int16_t x;
         int16_t y;
         int16_t z;
@@ -102,14 +104,16 @@ struct RCDecoding_Type {
         uint8_t press_right;
     } mouse;
 
-    struct {
+    struct
+    {
         uint16_t key_code;
     } key_board;
 
     TickType_t last_update_time;
 
     // Constructor
-    RCDecoding_Type() {
+    RCDecoding_Type()
+    {
         RCFrameCounter = 0;
         ch0 = 1024;
         ch1 = 1024;

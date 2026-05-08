@@ -53,8 +53,8 @@ elseif ("${CMAKE_BUILD_TYPE}" STREQUAL "MinSizeRel")
     message(STATUS "Maximum optimization for size")
     add_compile_options(-Os)
 else ()
-    message(STATUS "Minimal optimization, debug info included")
-    add_compile_options(-Og -g)
+    message(STATUS "No optimization, full debug info")
+    add_compile_options(-O0 -g -fno-inline)
 endif ()
 
 include_directories(Core/Inc USB_DEVICE/App USB_DEVICE/Target Drivers/STM32F4xx_HAL_Driver/Inc Drivers/STM32F4xx_HAL_Driver/Inc/Legacy Middlewares/Third_Party/FreeRTOS/Source/include Middlewares/Third_Party/FreeRTOS/Source/CMSIS_RTOS_V2 Middlewares/Third_Party/FreeRTOS/Source/portable/GCC/ARM_CM4F Middlewares/ST/STM32_USB_Device_Library/Core/Inc Middlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc Drivers/CMSIS/Device/ST/STM32F4xx/Include Drivers/CMSIS/Include)
@@ -63,9 +63,14 @@ add_definitions(-DDEBUG -DUSE_HAL_DRIVER -DSTM32F427xx)
 
 file(GLOB_RECURSE SOURCES "Core/*.*" "Middlewares/*.*" "Drivers/*.*" "USB_DEVICE/*.*")
 
+# CubeMX may regenerate `Core/Src/main.c`; this project uses `Core/Src/main.cpp`.
+# Exclude `main.c` to avoid duplicate symbols (main/Error_Handler/HAL callbacks).
+list(FILTER SOURCES EXCLUDE REGEX ".*/Core/Src/main\\.c$")
+
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/STM32F427IIHX_FLASH.ld)
 
-add_link_options(-Wl,-gc-sections,--print-memory-usage,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
+add_link_options(-Wl,--print-memory-usage)
+add_link_options(-Wl,-Map=${PROJECT_BINARY_DIR}/${PROJECT_NAME}.map)
 add_link_options(-mcpu=cortex-m4 -mthumb -mthumb-interwork)
 add_link_options(-T ${LINKER_SCRIPT})
 

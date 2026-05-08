@@ -21,156 +21,204 @@
  */
 
 /* Includes */
-#include <sys/stat.h>
-#include <stdlib.h>
 #include <errno.h>
-#include <stdio.h>
 #include <signal.h>
-#include <time.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <sys/stat.h>
 #include <sys/time.h>
 #include <sys/times.h>
+#include <time.h>
+#include <unistd.h>
+#include <stdint.h>
 
+#include "stm32f4xx_hal.h"
 
 /* Variables */
 extern int __io_putchar(int ch) __attribute__((weak));
 extern int __io_getchar(void) __attribute__((weak));
 
-
-char *__env[1] = { 0 };
+char *__env[1] = {0};
 char **environ = __env;
 
-
 /* Functions */
-void initialise_monitor_handles()
-{
-}
+void initialise_monitor_handles() {}
 
-int _getpid(void)
-{
-  return 1;
-}
+int _getpid(void) { return 1; }
 
 int _kill(int pid, int sig)
 {
-  (void)pid;
-  (void)sig;
-  errno = EINVAL;
-  return -1;
+    (void)pid;
+    (void)sig;
+    errno = EINVAL;
+    return -1;
 }
 
-void _exit (int status)
+void _exit(int status)
 {
-  _kill(status, -1);
-  while (1) {}    /* Make sure we hang here */
+    _kill(status, -1);
+    while (1)
+    {
+    } /* Make sure we hang here */
 }
 
 __attribute__((weak)) int _read(int file, char *ptr, int len)
 {
-  (void)file;
-  int DataIdx;
+    (void)file;
+    int DataIdx;
 
-  for (DataIdx = 0; DataIdx < len; DataIdx++)
-  {
-    *ptr++ = __io_getchar();
-  }
+    for (DataIdx = 0; DataIdx < len; DataIdx++)
+    {
+        *ptr++ = __io_getchar();
+    }
 
-  return len;
+    return len;
 }
 
 __attribute__((weak)) int _write(int file, char *ptr, int len)
 {
-  (void)file;
-  int DataIdx;
+    (void)file;
+    int DataIdx;
 
-  for (DataIdx = 0; DataIdx < len; DataIdx++)
-  {
-    __io_putchar(*ptr++);
-  }
-  return len;
+    for (DataIdx = 0; DataIdx < len; DataIdx++)
+    {
+        __io_putchar(*ptr++);
+    }
+    return len;
 }
 
 int _close(int file)
 {
-  (void)file;
-  return -1;
+    (void)file;
+    return -1;
 }
-
 
 int _fstat(int file, struct stat *st)
 {
-  (void)file;
-  st->st_mode = S_IFCHR;
-  return 0;
+    (void)file;
+    st->st_mode = S_IFCHR;
+    return 0;
 }
 
 int _isatty(int file)
 {
-  (void)file;
-  return 1;
+    (void)file;
+    return 1;
 }
 
 int _lseek(int file, int ptr, int dir)
 {
-  (void)file;
-  (void)ptr;
-  (void)dir;
-  return 0;
+    (void)file;
+    (void)ptr;
+    (void)dir;
+    return 0;
 }
 
 int _open(char *path, int flags, ...)
 {
-  (void)path;
-  (void)flags;
-  /* Pretend like we always fail */
-  return -1;
+    (void)path;
+    (void)flags;
+    /* Pretend like we always fail */
+    return -1;
 }
 
 int _wait(int *status)
 {
-  (void)status;
-  errno = ECHILD;
-  return -1;
+    (void)status;
+    errno = ECHILD;
+    return -1;
 }
 
 int _unlink(char *name)
 {
-  (void)name;
-  errno = ENOENT;
-  return -1;
+    (void)name;
+    errno = ENOENT;
+    return -1;
 }
 
 int _times(struct tms *buf)
 {
-  (void)buf;
-  return -1;
+    (void)buf;
+    return -1;
 }
 
 int _stat(char *file, struct stat *st)
 {
-  (void)file;
-  st->st_mode = S_IFCHR;
-  return 0;
+    (void)file;
+    st->st_mode = S_IFCHR;
+    return 0;
 }
 
 int _link(char *old, char *new)
 {
-  (void)old;
-  (void)new;
-  errno = EMLINK;
-  return -1;
+    (void)old;
+    (void)new;
+    errno = EMLINK;
+    return -1;
 }
 
 int _fork(void)
 {
-  errno = EAGAIN;
-  return -1;
+    errno = EAGAIN;
+    return -1;
 }
 
 int _execve(char *name, char **argv, char **env)
 {
-  (void)name;
-  (void)argv;
-  (void)env;
-  errno = ENOMEM;
-  return -1;
+    (void)name;
+    (void)argv;
+    (void)env;
+    errno = ENOMEM;
+    return -1;
+}
+
+int usleep(useconds_t usec)
+{
+    if (usec == 0U)
+    {
+        return 0;
+    }
+
+    uint32_t delay_ms = (uint32_t)((usec + 999U) / 1000U);
+    HAL_Delay(delay_ms);
+    return 0;
+}
+
+int _gettimeofday(struct timeval *tv, void *tzvp)
+{
+    (void)tzvp;
+
+    if (tv == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    uint32_t ms = HAL_GetTick();
+    tv->tv_sec = (time_t)(ms / 1000U);
+    tv->tv_usec = (suseconds_t)((ms % 1000U) * 1000U);
+    return 0;
+}
+
+int _getentropy(void *buffer, size_t length)
+{
+    if (buffer == NULL)
+    {
+        errno = EINVAL;
+        return -1;
+    }
+
+    uint8_t *out = (uint8_t *)buffer;
+    static uint32_t state = 0x6d2b79f5U;
+
+    for (size_t i = 0; i < length; ++i)
+    {
+        state ^= HAL_GetTick() + (uint32_t)(i * 0x9e3779b9U);
+        state ^= state << 13;
+        state ^= state >> 17;
+        state ^= state << 5;
+        out[i] = (uint8_t)(state & 0xFFU);
+    }
+
+    return 0;
 }

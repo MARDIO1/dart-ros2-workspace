@@ -1,21 +1,21 @@
 /* USER CODE BEGIN Header */
 /**
-  ******************************************************************************
-  * @file    can.c
-  * @brief   This file provides code for the configuration
-  *          of the CAN instances.
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2024 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
+ ******************************************************************************
+ * @file    can.c
+ * @brief   This file provides code for the configuration
+ *          of the CAN instances.
+ ******************************************************************************
+ * @attention
+ *
+ * Copyright (c) 2024 STMicroelectronics.
+ * All rights reserved.
+ *
+ * This software is licensed under terms that can be found in the LICENSE file
+ * in the root directory of this software component.
+ * If no LICENSE file comes with this software, it is provided AS-IS.
+ *
+ ******************************************************************************
+ */
 /* USER CODE END Header */
 /* Includes ------------------------------------------------------------------*/
 #include "can.h"
@@ -213,7 +213,8 @@ void HAL_CAN_MspDeInit(CAN_HandleTypeDef* canHandle)
 }
 
 /* USER CODE BEGIN 1 */
-void reboot_can(CAN_HandleTypeDef * hcan){
+void reboot_can(CAN_HandleTypeDef *hcan)
+{
     // 停止 CAN 外设，进入初始化模式 :contentReference[oaicite:7]{index=7}
     HAL_CAN_Stop(hcan);
     // 反初始化 CAN（清寄存器、滤波器、错误标志）
@@ -229,7 +230,8 @@ void reboot_can(CAN_HandleTypeDef * hcan){
         MX_CAN2_Init();
 
     // 重新启动 CAN 总线 :contentReference[oaicite:8]{index=8}
-    if (HAL_CAN_Start(hcan) != HAL_OK) {
+    if (HAL_CAN_Start(hcan) != HAL_OK)
+    {
         // 启动失败，可再次尝试或记录日志
     }
 
@@ -254,6 +256,5 @@ void reboot_can(CAN_HandleTypeDef * hcan){
     HAL_CAN_ConfigFilter(&hcan2, &sFilterConfig);
     HAL_CAN_Start(&hcan2);
     HAL_CAN_ActivateNotification(&hcan2, CAN_IT_RX_FIFO0_MSG_PENDING);
-
 }
 /* USER CODE END 1 */
