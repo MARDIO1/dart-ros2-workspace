@@ -1219,6 +1219,7 @@ class ActionMatch_Enter : public OpenFSMAction {
     msgDartStatus.dart_state = E_Match_Actions::Enter + E_Dart_State::Match;
 
     setLoadServotoUP();
+    pneumatic::main_air_pump.on();
     // setSlidedownServotoCut();
 
     fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
@@ -1494,6 +1495,7 @@ class ActionMatch_Wait : public OpenFSMAction {
 class ActionMatch_Launch : public OpenFSMAction {
   void enter(OpenFSM &fsm) const override {
     // 判断是否一路skip
+    OpenFan();
     if (msgDartStatus.dart_launch_process >
         msgDartProtocols.dart_launch_process_offset_end) {
       fsm.nextAction();
@@ -2033,7 +2035,10 @@ class ActionMatch_Exit : public OpenFSMAction {
     motor_controller::MotorLoadController[1].target_velocity_ = 0;
   }
 
-  void exit(OpenFSM &fsm) const override { pre_launch_grant = false; }
+  void exit(OpenFSM &fsm) const override {
+     pre_launch_grant = false;
+     pneumatic::main_air_pump.off();
+   }
 };
 
 void Dart_FSM::start() {
