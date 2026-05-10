@@ -141,7 +141,7 @@ void microros_node_task(void)
 
     xTaskCreate(state_machine::fsm_thread, "fsm_thread", 1024, NULL, 11, NULL);
 
-    xTaskCreate(motor_controller::pid_control_task, "pid_control_task", 256,
+    xTaskCreate(motor_controller::pid_control_task, "pid_control_task", 1024,
                 NULL, 25, NULL);
 
     set_ros_transport();
