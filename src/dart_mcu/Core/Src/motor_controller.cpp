@@ -193,16 +193,26 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             motor::update_can_array(can_array, 2,
                                     motor::MotorLoad[1].updateCurrent());
 
-            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0);
-            HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
+            uint32_t to1 = 0;
+            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) {
+                if (++to1 > 5000) { HAL_CAN_AbortTxRequest(&hcan1, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2); break; }
+            }
+            if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) > 0) {
+                HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
+            }
 
             memset(can_array, 0, 8);
             tx_header.StdId = 0x1fe;
             update_controller_current(motor::MotorYawLS, MotorYawLSController);
             motor::update_can_array(can_array, 3,
                                     motor::MotorYawLS.updateCurrent());
-            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0);
-            HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
+            uint32_t to2 = 0;
+            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) {
+                if (++to2 > 5000) { HAL_CAN_AbortTxRequest(&hcan1, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2); break; }
+            }
+            if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) > 0) {
+                HAL_CAN_AddTxMessage(&hcan1, &tx_header, can_array, &tx_mailbox);
+            }
         }
         {
             // CAN2
@@ -210,8 +220,13 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
             memset(can_array, 0, 8);
             tx_header.StdId = 0x2fe;
             // Update Controller
-            while(HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) == 0);
-            HAL_CAN_AddTxMessage(&hcan2, &tx_header, can_array, &tx_mailbox);
+            uint32_t to3 = 0;
+            while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) == 0) {
+                if (++to3 > 5000) { HAL_CAN_AbortTxRequest(&hcan2, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2); break; }
+            }
+            if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) > 0) {
+                HAL_CAN_AddTxMessage(&hcan2, &tx_header, can_array, &tx_mailbox);
+            }
             //在保护和boot状态下不要使能
             bool protect = (state_machine::dart_fsm.openFSM_.focusEState() ==
                                 state_machine::E_Dart_State::Protect ||
