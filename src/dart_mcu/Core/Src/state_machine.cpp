@@ -551,7 +551,7 @@ public:
     last_sw_left = RC_Data.Switch_Left; // 保存上一次拨轮位置
 
     // 主动失能仅针对 DM4310：关闭/断开 DM4310 输出（安全起见）
-    DM_motorClose(1, 1);
+    motor::MotorDM4310.close();
   }
 
   void update(OpenFSM &fsm) const override {
@@ -602,6 +602,7 @@ public:
     enableLaser();
     enableTriggerServo();
     enableSlidedownServo();
+    motor::MotorDM4310.open();
     soundEffectManager.clearSoundEffects();
   }
 };
@@ -696,12 +697,12 @@ public:
     motor::MotorTriggerLS.setNextState(motor::E_MotorState::RUNNING);
 
     // 响应遥控器指令
-      if (RC_Data.Switch_Left == RC_SW_UP) {
+    if (RC_Data.Switch_Left == RC_SW_UP) {
       // 调试内容写在这里
-      
+
       // 摇杆ch0旋转4310电机
-      // 直接一次性位置控制调用（Motor_ID=1, CAN_ID=1）
-      DM_speedpositionControl(1, 1, 1.0f, 0.1f);
+      motor::MotorDM4310.setpos(1.0f, 0.1f);
+      motor::MotorDM4310.updatemove();
 
       // 摇杆ch1控制舵机
 

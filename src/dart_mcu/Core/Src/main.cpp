@@ -345,10 +345,12 @@ void HAL_CAN_RxFifo0MsgPendingCallback(CAN_HandleTypeDef *hcan)
             }
             default:
             {
-                // forward raw data to DM wrapper if needed
-                motor::MotorDM4310.decodeCanMsg(aData);
                 break;
             }
+        }
+        if (RxHeader.StdId == motor::MotorDM4310.feedbackStdId())
+        {
+            motor::MotorDM4310.decodeCanMsg(aData);
         }
     }
     if (hcan == &hcan2)

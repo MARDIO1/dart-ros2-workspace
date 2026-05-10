@@ -85,48 +85,94 @@ public:
 // DM4310-specific motor wrapper
 class motor_dm {
 public:
-    motor_dm() { initDriver(); }
+  motor_dm() { initDriver(); }
 
-    void create(uint8_t motor_id) {
-        // set up struct and open CAN
-        info_.type = MOTOR_DM4310;
-        info_.id = motor_id;
-        info_.Reductionratio = MOTORDM4310_Reductionratio;
-        DM_motorOpen(motor_id, 1);
-    }
+  void create(uint8_t motor_id, uint8_t can_id = 1) {
+    initDriver();
+    motor_id_ = motor_id;
+    can_id_ = can_id;
+    info_.type = MOTOR_DM4310;
+    info_.id = motor_id;
+    info_.Reductionratio = MOTORDM4310_Reductionratio;
+    info_.Error_id = 0;
+    info_.Mode = 0;
+    info_.Realcirnum = 0;
+    info_.RealAngle = 0.0f;
+    info_.Realrotationrate = 0.0f;
+    info_.current_angle_with_circle_ = 0.0f;
+    target_vel_radps = 0.0f;
+    target_pos_rad = 0.0f;
+    standard_angle_rad_ = 0.0f;
+    DM_motorOpen(motor_id_, can_id_);
+  }
 
-    void decodeCanMsg(const uint8_t *rxData) {
-        // feed raw bytes into the internal driver struct
-        DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));
-    }
+  void open() { DM_motorOpen(motor_id_, can_id_); }
 
-    void setNextState(E_MotorState state) {
-        // if you need state tracking, add it here
-        (void)state;
-    }
+  void close() { DM_motorClose(motor_id_, can_id_); }
 
-    void setCurrent(int16_t target_current) {
-        // not used by DM driver
-        (void)target_current;
-    }
+  void clearError() { DM_motorErrClear(motor_id_, can_id_); }
 
-    int16_t updateCurrent() {
-        // can convert internal info_ data if desired
-        return 0;
-    }
+  void zeroSet() { DM_motorZeroSet(motor_id_, can_id_); }
+
+  void speedPositionControl(float pos, float vel) {
+    DM_speedpositionControl(motor_id_, can_id_, pos, vel);
+  }
+
+  void decodeCanMsg(const uint8_t *rxData) {
+    DM_infoHandle(&info_, const_cast<uint8_t *>(rxData));
+  }
+
+  void setStandardAngleRad(float standard_angle_rad) {
+    standard_angle_rad_ = standard_angle_rad;
+  }
+
+  void setStandardAngleDeg(float standard_angle_deg) {
+    standard_angle_rad_ =
+        standard_angle_deg * 3.14159265358979323846f / 180.0f;
+  }
+
+  void setpos(float pos_rad, float vel_radps) {
+    target_pos_rad = pos_rad + standard_angle_rad_;
+    target_vel_radps = vel_radps;
+  }
+
+  void setposDeg(float pos_deg, float vel_radps) {
+    setpos(pos_deg * 3.14159265358979323846f / 180.0f, vel_radps);
+  }
+
+  float getRealAngleDeg() const { return info_.RealAngle; }
+
+  float getAngleWithCircle() const { return info_.current_angle_with_circle_; }
+
+  float getTargetAngleRad() const { return target_pos_rad; }
+
+  void updatemove() { speedPositionControl(target_pos_rad, target_vel_radps); }
+
+  void setNextState(E_MotorState state) { (void)state; }
+
+  void setCurrent(int16_t target_current) { (void)target_current; }
+
+  int16_t updateCurrent() { return 0; }
+
+  uint32_t feedbackStdId() const { return DMJ_STDID + motor_id_; }
 
 private:
-    static void initDriver() {
-        static bool inited = false;
-        if (!inited) {
-            DM_Set_CAN_Send_Function(my_can_send);
-            inited = true;
-        }
+  static void initDriver() {
+    static bool inited = false;
+    if (!inited) {
+      DM_Set_CAN_Send_Function(my_can_send);
+      inited = true;
     }
+  }
 
-    static void my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]);
-    /* per-instance driver information */
-    motor_t info_;
+  static void my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]);
+
+  uint8_t motor_id_ = 0;
+  uint8_t can_id_ = 1;
+  float target_vel_radps = 0.0f;
+  float target_pos_rad = 0.0f;
+  float standard_angle_rad_ = 0.0f;
+  motor_t info_;
 };
 
 extern motor_rm MotorTriggerLS; // 扳机丝杆电机

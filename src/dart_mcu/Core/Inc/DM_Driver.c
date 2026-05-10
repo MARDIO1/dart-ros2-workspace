@@ -117,6 +117,7 @@ void DM_infoHandle(motor_t *mot, uint8_t *Data) {
 
   mot->Realcirnum = temp_cirnum;
   mot->RealAngle = temp_angle;
+  mot->current_angle_with_circle_ = temp_cirnum * 360.0f + temp_angle;
 
   // 更新其他反馈数据
   mot->FeedbackData.RealSpeed =

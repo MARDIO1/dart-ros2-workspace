@@ -5,19 +5,24 @@
 #include "motor.h"
 #include "dm_driver.h"  // DM4310 support
 
-// callback stub required by motor_dm (simple CAN1 transmit)
+// callback stub required by motor_dm (CAN1/CAN2 transmit)
 void motor::motor_dm::my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8]) {
+    CAN_HandleTypeDef *hcan = (CAN_ID == 2) ? &hcan2 : &hcan1;
+    if (HAL_CAN_GetTxMailboxesFreeLevel(hcan) == 0) {
+        return;
+    }
+
     CAN_TxHeaderTypeDef TxHeader;
     uint32_t TxMailbox;
-    
+
     TxHeader.StdId = stdid;
     TxHeader.ExtId = 0;
     TxHeader.IDE = CAN_ID_STD;
     TxHeader.RTR = CAN_RTR_DATA;
     TxHeader.DLC = 8;
     TxHeader.TransmitGlobalTime = DISABLE;
-    
-    HAL_CAN_AddTxMessage(&hcan1, &TxHeader, data, &TxMailbox);
+
+    HAL_CAN_AddTxMessage(hcan, &TxHeader, data, &TxMailbox);
 }
 
   // global DM driver struct removed; motor_dm now owns its own motor_t member (info_)
