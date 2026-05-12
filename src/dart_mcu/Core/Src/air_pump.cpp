@@ -7,8 +7,7 @@ GPIO_TypeDef *const kAirPumpPort =
 constexpr uint16_t kAirPumpPin = GPIO_PIN_2;
 GPIO_TypeDef *const kSolenoidPort = GPIOH;
 constexpr uint16_t kSolenoidPins[3] = {GPIO_PIN_3, GPIO_PIN_4, GPIO_PIN_5};
-} // namespace  PH4有问题？？ PH5有问题？？？？为什么PH3没有问题？？
-
+} 
 void air_pump::begin(GPIO_TypeDef *port, uint16_t pin, bool active_high,
                      bool default_on) {
   port_ = port;
