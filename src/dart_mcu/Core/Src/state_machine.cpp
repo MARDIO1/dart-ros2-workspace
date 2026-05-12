@@ -957,7 +957,7 @@ public:
         }//分块
       //自动的部分
       // 解除扳机控制 复位流程 不用变
-      switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
+      switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State) {
       case 0:
         if (RC_Data.ch4_wheel <= 514) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 1;
