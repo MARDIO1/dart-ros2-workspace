@@ -1007,8 +1007,8 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
       soundEffectManager.clearSoundEffects();   // 关键：先打断旧音乐
-      static int launch_time =0; // 下一次发射的步号: 0->1->2->3 循环
-      static int launch_step_this_cycle = 0; // 本轮装填/关阀使用的步号快照
+      static int launch_time =1; // 下一次发射的步号:1->2->3 循环
+      static int launch_step_this_cycle = 1; // 本轮装填/关阀使用的步号快照
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0://转转盘
@@ -1016,13 +1016,10 @@ public:
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 1;//确定进入
           launch_step_this_cycle = launch_time;
           // 首先初处理风车位子，即转盘前进一个格子
-            if (launch_step_this_cycle >= 0 && launch_step_this_cycle < 4) {
+            if (launch_step_this_cycle >= 1 && launch_step_this_cycle <= 3) {
               motor::MotorWindmill.setposDeg(kWindmillStepDeg[launch_step_this_cycle], CONFIG_DM_WINDMILL_VELOCITY_RADPS);
             }
-            if(launch_step_this_cycle==0){
-              fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=5;//第一次发射不需要控制装填机构，直接返回等待下一次发射指令
-          }
-          launch_time = (launch_time + 1) % 4;
+          launch_time = launch_time % 3 + 1;//更新下一次发射的步号
         }
         break;
       case 1://滑台下降，等待到位
@@ -1035,7 +1032,6 @@ public:
             motor_controller::MotorLoadController[1]
                     .current_angle_with_rounds_ >=  
                 CONFIG_MOTOR_LOAD_ANGLE_DOWN)) {
-          setTriggerServotoTrigger(); // 扳机，有用，压下去。脉冲
          // NewLoadServorDown();
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 2;
           fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
@@ -1047,7 +1043,7 @@ public:
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
         // 降下升降机并等待时间到达
         if(err < 5.0f){
-          //风车pitch下来 
+          //pitch下来 
           NewLoadServorDown();
         }
         if (xTaskGetTickCount() -
@@ -1069,7 +1065,6 @@ public:
                 CONFIG_MOTOR_LOAD_ANGLE_WIND) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
           setLoadServotoUP();
-          //setTriggerServotoReload();//堵住准备发射 先别搞，我只是想自动装填
         }
         break;
       case 4:
