@@ -1774,6 +1774,10 @@ void enter(OpenFSM &fsm) const override{
         default:
           break;
     }
+    motor_controller::MotorLoadController[0].target_velocity_ =
+        base_velocity + motor_controller::MotorLoadSyncController.output;
+    motor_controller::MotorLoadController[1].target_velocity_ =
+        base_velocity - motor_controller::MotorLoadSyncController.output;
   }
   void exit(OpenFSM &fsm) const override {}   
 };
