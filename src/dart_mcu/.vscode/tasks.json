@@ -93,9 +93,7 @@
             "command": "openocd",
             "args": [
                 "-f",
-                "interface/stlink.cfg",
-                "-f",
-                "target/stm32f4x.cfg",
+                "${workspaceFolder}/stlink.cfg",
                 "-c",
                 "program ${workspaceFolder}/build/dart_mcu.elf verify reset exit"
             ],

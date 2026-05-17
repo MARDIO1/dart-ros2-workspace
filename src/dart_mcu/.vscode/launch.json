@@ -1,7 +1,4 @@
 {
-    // 使用 IntelliSense 了解相关属性。 
-    // 悬停以查看现有属性的描述。
-    // 欲了解更多信息，请访问: https://go.microsoft.com/fwlink/?linkid=830387
     "version": "0.2.0",
     "configurations": [
         {
@@ -36,9 +33,9 @@
                 "interface/cmsis-dap.cfg",
                 "-f",
                 "target/stm32f4x.cfg"
-            ], // 按需修改
+            ],
             "serverHost": "localhost",
-            "serverPort": "3333", // 默认为3333
+            "serverPort": "3333",
             "serverCwd": "",
             "runEntry": "main",
             "imagesAndSymbols": [
@@ -49,6 +46,53 @@
                     "symbolOffset": ""
                 }
             ]
+        },
+        {
+            "name": "Cortex-Debug: OpenOCD ST-LINK",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/dart_mcu.elf",
+            "device": "STM32F427IIHx",
+            "preLaunchTask": "CMake: Build",
+            "runToEntryPoint": "main",
+            "serverpath": "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/bin/openocd.exe",
+            "gdbPath": "T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+            "searchDir": [
+                "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/openocd/scripts"
+            ],
+            "configFiles": [
+                "${workspaceFolder}/stlink.cfg"
+            ],
+            "showDevDebugOutput": "raw",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
+        },
+        {
+            "name": "Cortex-Debug: OpenOCD ST-LINK Attach",
+            "type": "cortex-debug",
+            "request": "attach",
+            "servertype": "openocd",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/dart_mcu.elf",
+            "device": "STM32F427IIHx",
+            "runToEntryPoint": "main",
+            "serverpath": "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/bin/openocd.exe",
+            "gdbPath": "T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+            "searchDir": [
+                "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/openocd/scripts"
+            ],
+            "configFiles": [
+                "${workspaceFolder}/stlink.cfg"
+            ],
+            "showDevDebugOutput": "raw",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 4
+            }
         }
     ]
 }
