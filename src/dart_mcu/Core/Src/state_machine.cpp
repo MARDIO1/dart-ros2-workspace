@@ -793,7 +793,7 @@ public:
           moto_temp_angle_d = kWindmillStepDeg[state_ch0];
         }
         
-        motor::MotorWindmill.setposDeg(moto_temp_angle_d, CONFIG_DM_WINDMILL_VELOCITY_RADPS);
+        motor::MotorWindmill.setposDeg(moto_temp_angle_d, CONFIG_DM_WINDMILL_LOAD_VELOCITY_RADPS);
         // 调试模式下主气泵开关控制：ch3上开、下关、中间保持
         if (RC_Data.ch3 >= 1500) {
           pneumatic::main_air_pump.on();
@@ -1008,8 +1008,8 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
       soundEffectManager.clearSoundEffects();   // 关键：先打断旧音乐
-      static int launch_time =0; // 下一次发射的步号: 0->1->2->3 循环
-      static int launch_step_this_cycle = 0; // 本轮装填/关阀使用的步号快照
+      static int launch_time =1; // 下一次发射的步号:1->2->3 循环
+      static int launch_step_this_cycle = 1; // 本轮装填/关阀使用的步号快照
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0://确定进入
@@ -1057,7 +1057,7 @@ public:
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
         // 降下升降机并等待时间到达
         if(err < 5.0f){
-          //风车pitch下来 
+          //pitch下来 
           NewLoadServorDown();
         }
         if (xTaskGetTickCount() -
@@ -1079,7 +1079,6 @@ public:
                 CONFIG_MOTOR_LOAD_ANGLE_WIND) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
           setLoadServotoUP();
-          //setTriggerServotoReload();//堵住准备发射 先别搞，我只是想自动装填
         }
         break;
       case 5:
@@ -1227,9 +1226,12 @@ class ActionMatch_Enter : public OpenFSMAction {
     msgDartStatus.dart_launch_process =
         msgDartProtocols.dart_launch_process_offset_begin;
     msgDartStatus.dart_state = E_Match_Actions::Enter + E_Dart_State::Match;
-
-    setLoadServotoUP();
-    pneumatic::main_air_pump.on();
+    
+    //setLoadServotoUP();
+    NewLoadServorUp();
+    motor::MotorWindmill.setposDeg(kWindmillStepDeg[0],
+                                      CONFIG_DM_WINDMILL_ENTERMATCH_VELOCITY_RADPS);
+    //pneumatic::main_air_pump.on();在调试模式下手动安装，之后气泵一直保持打开
     // setSlidedownServotoCut();
 
     fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
@@ -1653,16 +1655,17 @@ class ActionMatch_Launch : public OpenFSMAction {
         motor_controller::MotorLoadController[1].set_state(
             motor_controller::E_PID_Velocity_Angle_Controller_State::
                 VELOCITY_CONTROL);
-        if (msgDartStatus.last_launch_time != last_launch_time_) {
+        // 卡死检测已注释：发射后直接继续装填，跳过测速仪确认
+        // if (msgDartStatus.last_launch_time != last_launch_time_) {
           msgDartStatus.dart_launch_process++;
           motor_controller::MotorYawLSController.target_angle_with_rounds_ =
               msgDartProtocols.primary_yaw + msgDartStatus.primary_yaw_offset;
           fsm.nextAction();
-        } else {
-          fsm.custom<Dart_FSM>()->ActionMatch_Launch_State = 5;
-          dart_mcu_log("Expect to launch but stuck: last: %" PRIu64,
-                       last_launch_time_);
-        }
+        // } else {
+        //   fsm.custom<Dart_FSM>()->ActionMatch_Launch_State = 5;
+        //   dart_mcu_log("Expect to launch but stuck: last: %" PRIu64,
+        //                last_launch_time_);
+        // }
       }
       break;
 
@@ -1684,7 +1687,7 @@ class ActionMatch_Launch : public OpenFSMAction {
 };
 
 class ActionMatch_New_Reload : public OpenFSMAction {
-  /*新的装填机制:发射后进入此动作->滑台，loadmoto移动到安装位置后方（需要调节位置参数1）（位置闭环，当落位，角度差值<5进入下一个动作)
+  /*新的装填机制:launch->load->wait:滑台，loadmoto移动到安装位置后方（需要调节位置参数1）（位置闭环，当落位，角度差值<5进入下一个动作)
 ->大摆锤旋转摇臂到安装角度（需要调节位置参数）（DM角度闭环<3度误差进入下一个）
 ->liftDM电机工作，旋转大摆锤pitch到安装角度(定时器，大概2秒进入下一个动作）
 ->滑台移动主动安装镖体（位置参数）（位置闭环）
@@ -1727,7 +1730,7 @@ void enter(OpenFSM &fsm) const override{
     switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0:{
         motor::MotorWindmill.setposDeg(kWindmillStepDeg[msgDartStatus.dart_launch_process],
-                                      CONFIG_DM_WINDMILL_VELOCITY_RADPS);
+                                    CONFIG_DM_WINDMILL_LOAD_VELOCITY_RADPS);
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State=1;
         fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_=xTaskGetTickCount();
       }
@@ -1785,6 +1788,10 @@ void enter(OpenFSM &fsm) const override{
         default:
           break;
     }
+    motor_controller::MotorLoadController[0].target_velocity_ =
+        base_velocity + motor_controller::MotorLoadSyncController.output;
+    motor_controller::MotorLoadController[1].target_velocity_ =
+        base_velocity - motor_controller::MotorLoadSyncController.output;
   }
   void exit(OpenFSM &fsm) const override {}   
 };
