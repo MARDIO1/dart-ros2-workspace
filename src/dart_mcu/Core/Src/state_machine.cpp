@@ -2088,7 +2088,8 @@ void Dart_FSM::start() {
 }
 
 void fsm_thread(void *parameters) {
-  TickType_t last_time;
+  TickType_t last_time = xTaskGetTickCount();
+  ;
 
   dart_fsm.start();
 

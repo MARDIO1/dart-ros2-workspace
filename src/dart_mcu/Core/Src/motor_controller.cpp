@@ -257,6 +257,7 @@ template <typename T> void pid_angle_velocity_controller<T>::reset()
                 motor_load_sync_offset);
         }
         vTaskDelayUntil(&xLastWakeTime, 1);
+        //vTaskDelay(1);
     }
 
     vTaskDelete(nullptr);
