@@ -258,22 +258,22 @@ void timer_logger_callback(rcl_timer_t *timer, int64_t last_call_time)
 
 void timer_send_status_callback(rcl_timer_t *timer, int64_t last_call_time)
 {
-    (void)last_call_time;
-    if (timer != nullptr)
-    {
-        // 序列化镖架状态变量发送
-        // 发送velocity 填充last_launch_time
-        static TickType_t last_send_tick = velocity_meter_result.record_time;
-        if (last_send_tick != velocity_meter_result.record_time)
-        {
-            dart_mcu_log("velocity: %.2f", velocity_meter_result.velocity);
-            last_send_tick = velocity_meter_result.record_time;
-            msgDartStatus.last_launch_time = rmw_uros_epoch_millis();
-        }
-        msgDartStatus.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
-        msgDartStatus.header.stamp.nanosec =
-            rmw_uros_epoch_nanos() % 1000000000;
-        rcl_publish(&publisher_status, &msgDartStatus, nullptr);
+  extern int32_t tmep_data_1;
+  tmep_data_1 =motor_controller::MotorLoadController[0].current_angle_with_rounds_;
+
+  (void)last_call_time;
+  if (timer != nullptr) {
+    // 序列化镖架状态变量发送
+    // 发送velocity 填充last_launch_time
+    static TickType_t last_send_tick = velocity_meter_result.record_time;
+    if (last_send_tick != velocity_meter_result.record_time) {
+      dart_mcu_log("velocity: %.2f", velocity_meter_result.velocity);
+      last_send_tick = velocity_meter_result.record_time;
+      msgDartStatus.last_launch_time = rmw_uros_epoch_millis();
+    }
+    msgDartStatus.header.stamp.sec = rmw_uros_epoch_millis() / 1000;
+    msgDartStatus.header.stamp.nanosec = rmw_uros_epoch_nanos() % 1000000000;
+    rcl_publish(&publisher_status, &msgDartStatus, nullptr);
     }
 }
 

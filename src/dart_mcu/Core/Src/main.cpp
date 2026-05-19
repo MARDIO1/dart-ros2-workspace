@@ -86,9 +86,7 @@ int main(void)
      * Systick. */
 
 
-
-
-     HAL_Init();
+    HAL_Init();
 
     /* USER CODE BEGIN Init */
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};
