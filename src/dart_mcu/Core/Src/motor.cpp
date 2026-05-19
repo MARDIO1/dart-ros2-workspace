@@ -32,27 +32,17 @@ void motor::motor_dm::my_can_send(uint8_t CAN_ID, uint32_t stdid, uint8_t data[8
   TxHeader.DLC = 8;
   TxHeader.TransmitGlobalTime = DISABLE;
   if (CAN_ID == 1) {
-    uint32_t timeout1 = 0;
-    while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) == 0) {
-      if (++timeout1 > 5000) {
-        HAL_CAN_AbortTxRequest(&hcan1, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2);
-        break;
-      }
-    }
     if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan1) > 0) {
       HAL_CAN_AddTxMessage(&hcan1, &TxHeader, data, &TxMailbox);
+    } else {
+      HAL_CAN_AbortTxRequest(&hcan1, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2);
     }
   }
   if (CAN_ID == 2) {
-    uint32_t timeout2 = 0;
-    while (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) == 0) {
-      if (++timeout2 > 5000) {
-        HAL_CAN_AbortTxRequest(&hcan2, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2);
-        break;
-      }
-    }
     if (HAL_CAN_GetTxMailboxesFreeLevel(&hcan2) > 0) {
       HAL_CAN_AddTxMessage(&hcan2, &TxHeader, data, &TxMailbox);
+    } else {
+      HAL_CAN_AbortTxRequest(&hcan2, CAN_TX_MAILBOX0 | CAN_TX_MAILBOX1 | CAN_TX_MAILBOX2);
     }
   }
 }
