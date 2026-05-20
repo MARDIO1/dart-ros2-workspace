@@ -2,7 +2,45 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Cortex-Debug: OpenOCD ST-LINK",
+            "name": "STM32F427: Flash & Debug (ST-Link GDB)",
+            "type": "cortex-debug",
+            "request": "launch",
+            "servertype": "stlink",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/dart_mcu.elf",
+            "device": "STM32F427IIHx",
+            "preLaunchTask": "CMake: Build",
+            "runToEntryPoint": "main",
+            "serverpath": "C:/Users/sunjiayi/AppData/Local/stm32cube/bundles/stlink-gdbserver/7.11.0+st.1/bin/ST-LINK_gdbserver.exe",
+            "gdbPath": "C:/Users/sunjiayi/AppData/Local/stm32cube/bundles/gnu-gdb-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gdb.exe",
+            "showDevDebugOutput": "none",
+            "svdFile": "STM32F427",
+            "stm32cubeprogrammer": "C:/Users/sunjiayi/AppData/Local/stm32cube/bundles/programmer/2.21.0/bin",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 10
+            }
+        },
+        {
+            "name": "STM32F427: Attach (ST-Link GDB)",
+            "type": "cortex-debug",
+            "request": "attach",
+            "servertype": "stlink",
+            "cwd": "${workspaceFolder}",
+            "executable": "${workspaceFolder}/build/dart_mcu.elf",
+            "device": "STM32F427IIHx",
+            "serverpath": "C:/Users/sunjiayi/AppData/Local/stm32cube/bundles/stlink-gdbserver/7.11.0+st.1/bin/ST-LINK_gdbserver.exe",
+            "gdbPath": "C:/Users/sunjiayi/AppData/Local/stm32cube/bundles/gnu-gdb-for-stm32/14.3.1+st.2/bin/arm-none-eabi-gdb.exe",
+            "showDevDebugOutput": "none",
+            "svdFile": "STM32F427",
+            "stm32cubeprogrammer": "C:/Users/sunjiayi/AppData/Local/stm32cube/bundles/programmer/2.21.0/bin",
+            "liveWatch": {
+                "enabled": true,
+                "samplesPerSecond": 10
+            }
+        },
+        {
+            "name": "STM32F427: Flash & Debug (OpenOCD)",
             "type": "cortex-debug",
             "request": "launch",
             "servertype": "openocd",
@@ -11,52 +49,47 @@
             "device": "STM32F427IIHx",
             "preLaunchTask": "CMake: Build",
             "runToEntryPoint": "main",
-            "serverpath": "D:/DevEnv/Debuggers/OpenOCD/bin/openocd.exe",
-            "gdbPath": "D:/DevEnv/Compilers/ARM-GCC/bin/arm-none-eabi-gdb.exe",
+            "serverpath": "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/bin/openocd.exe",
+            "gdbPath": "T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
             "searchDir": [
-                "D:/DevEnv/Debuggers/OpenOCD/share/openocd/scripts"
+                "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/openocd/scripts"
             ],
             "configFiles": [
-                "${workspaceFolder}/stlink.cfg"
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
             ],
-            "showDevDebugOutput": "raw",
-            "rtos": "FreeRTOS",
+            "showDevDebugOutput": "none",
+            "svdFile": "STM32F427",
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4
             },
-            "gdbServerArgs": "",
-            "overrideGDBServerPort": false,
-            "preRestartCommands": [],
-            "postRestartCommands": []
+            "rtos": "auto"
         },
         {
-            "name": "Cortex-Debug: OpenOCD ST-LINK Attach",
+            "name": "STM32F427: Attach (OpenOCD)",
             "type": "cortex-debug",
             "request": "attach",
             "servertype": "openocd",
             "cwd": "${workspaceFolder}",
             "executable": "${workspaceFolder}/build/dart_mcu.elf",
             "device": "STM32F427IIHx",
-            "runToEntryPoint": "main",
-            "serverpath": "D:/DevEnv/Debuggers/OpenOCD/bin/openocd.exe",
-            "gdbPath": "D:/DevEnv/Compilers/ARM-GCC/bin/arm-none-eabi-gdb.exe",
+            "serverpath": "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/bin/openocd.exe",
+            "gdbPath": "T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
             "searchDir": [
-                "D:/DevEnv/Debuggers/OpenOCD/share/openocd/scripts"
+                "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/openocd/scripts"
             ],
             "configFiles": [
-                "${workspaceFolder}/stlink.cfg"
+                "interface/stlink.cfg",
+                "target/stm32f4x.cfg"
             ],
-            "showDevDebugOutput": "raw",
-            "rtos": "FreeRTOS",
+            "showDevDebugOutput": "none",
+            "svdFile": "STM32F427",
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4
             },
-            "gdbServerArgs": "",
-            "overrideGDBServerPort": false,
-            "preRestartCommands": [],
-            "postRestartCommands": []
+            "rtos": "auto"
         }
     ]
 }

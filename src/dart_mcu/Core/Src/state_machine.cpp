@@ -1031,8 +1031,6 @@ public:
              motor_controller::MotorLoadController[1]
                      .current_angle_with_rounds_ >=
                  CONFIG_MOTOR_LOAD_ANGLE_DOWN)) {
-          // setTriggerServotoTrigger(); // 扳机，有用，压下去。脉冲
-          // NewLoadServorDown();
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =2; // 下一个状态
         }
         break;
@@ -1106,10 +1104,29 @@ public:
 
         //装填完毕，准备发射
         // 等待Wheel复位
-        if (RC_Data.ch4_wheel < 1622) {
         //这个滚轮条件是什么，还可以在这里等待吗
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
-        }
+          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 8;
+       break;
+       case 8:
+       base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
+        if ((motor_controller::MotorLoadController[0]
+                     .current_angle_with_rounds_ >=
+                 CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN |
+             motor_controller::MotorLoadController[1]
+                     .current_angle_with_rounds_ >=
+                 CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN)) {
+          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =9; }// 下一个状态
+          break;
+        case 9:
+         base_velocity = -CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
+        if ((motor_controller::MotorLoadController[0]
+                     .current_angle_with_rounds_ <=
+                 CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_UP|
+             motor_controller::MotorLoadController[1]
+                     .current_angle_with_rounds_ <=
+                 CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_UP)) {
+          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =0; }// 下一个状态
+          break;
       }
       //稳住当前
       motor_controller::MotorLoadController[0].target_velocity_ =
@@ -1228,12 +1245,14 @@ class ActionMatch_Enter : public OpenFSMAction {
     msgDartStatus.dart_launch_process =
         msgDartProtocols.dart_launch_process_offset_begin;
     msgDartStatus.dart_state = E_Match_Actions::Enter + E_Dart_State::Match;
-    
-    //setLoadServotoUP();
+   
     NewLoadServorUp();
     motor::MotorWindmill.setposDeg(kWindmillStepDeg[0],
                                       CONFIG_DM_WINDMILL_ENTERMATCH_VELOCITY_RADPS);
     pneumatic::main_air_pump.on();//在调试模式下手动安装，之后气泵一直保持打开
+    for(int i=0;i<2;i++){
+        pneumatic::main_solenoid[i].on();
+    }
     // setSlidedownServotoCut();
 
     fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;

@@ -5,12 +5,11 @@
 1. **安装 VSCode 扩展**：
    - CMake Tools (ms-vscode.cmake-tools)
    - C/C++ (ms-vscode.cpptools)
-   - Cortex-Debug (marus25.cortex-debug)
 
 2. **工具链**：
    - CMake 3.28.1 或更高版本
    - ARM GCC 工具链 (已安装到 T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/)
-   - OpenOCD (可选，用于调试和烧录)
+   - ST-Link GDB Server (随 STM32CubeCLT 安装，或确保在 PATH 中)
 
 ## 配置说明
 
@@ -27,13 +26,10 @@
 - **CMake: Configure** - 重新配置CMake
 - **CMake: Clean** - 清理构建目录
 - **CMake: Rebuild** - 清理并重新构建
-- **OpenOCD: Flash** - 烧录固件到STM32
 
 ### 3. 调试配置
 按 `F5` 或点击调试侧边栏，选择以下配置：
-- **Cortex Debug (OpenOCD)** - 使用OpenOCD和ST-Link调试
-- **Cortex Debug (J-Link)** - 使用J-Link调试
-- **Cortex Debug (ST-Link)** - 使用ST-Link工具调试
+- **ST-LINK Debug** - 由 VS Code 自动启动 ST-Link GDB Server 并连接调试
 
 ### 4. 解决 CMake 可执行文件错误
 
@@ -62,7 +58,7 @@
 ## 调试步骤
 
 1. 连接 ST-Link 调试器到 STM32
-2. 按 `F5` 启动调试
+2. 按 `F5` 启动调试，VS Code 会自动拉起 ST-Link GDB Server
 3. 使用调试控制台：继续、单步、断点等
 
 ## 常见问题
@@ -74,7 +70,7 @@ A: 检查 CMake 和 ARM GCC 是否安装正确，路径是否在系统环境变�
 A: 确保工具链路径正确，或手动在 `.vscode/settings.json` 中设置完整路径。
 
 ### Q: 调试器无法连接
-A: 检查 ST-Link 连接，安装 ST-Link 驱动，或尝试不同的调试配置。
+A: 检查 ST-Link 连接，确认 ST-Link 驱动和 STM32CubeProgrammer 可用，再检查是否有其他进程占用了 `61234` 端口。
 
 ### Q: VSCode 按钮不工作
 A: 可能需要重新加载窗口或重新安装 CMake Tools 扩展。
