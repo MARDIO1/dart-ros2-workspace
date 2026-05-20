@@ -20,10 +20,15 @@
                 "${workspaceFolder}/stlink.cfg"
             ],
             "showDevDebugOutput": "raw",
+            "rtos": "FreeRTOS",
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4
-            }
+            },
+            "gdbServerArgs": "",
+            "overrideGDBServerPort": false,
+            "preRestartCommands": [],
+            "postRestartCommands": []
         },
         {
             "name": "Cortex-Debug: OpenOCD ST-LINK Attach",
@@ -43,10 +48,15 @@
                 "${workspaceFolder}/stlink.cfg"
             ],
             "showDevDebugOutput": "raw",
+            "rtos": "FreeRTOS",
             "liveWatch": {
                 "enabled": true,
                 "samplesPerSecond": 4
-            }
+            },
+            "gdbServerArgs": "",
+            "overrideGDBServerPort": false,
+            "preRestartCommands": [],
+            "postRestartCommands": []
         }
     ]
 }
