@@ -576,6 +576,8 @@ public:
     // 保护状态
     soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_autopilot_disconnect));
     // 关闭激光器
+    CloseFan();
+    
     disableLaser();
     meter::velocity_meter.disable();
     msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState();
@@ -693,7 +695,7 @@ public:
     enableTriggerServo();
     enableSlidedownServo();
     setTriggerServotoReload();
-
+    
     setLoadServotoUP();
     // setSlidedownServotoCut();
 
@@ -1040,7 +1042,7 @@ public:
         if (launch_step_this_cycle >= 0 && launch_step_this_cycle < 4) {
           motor::MotorWindmill.setposDeg(
               kWindmillStepDeg[launch_step_this_cycle],
-              CONFIG_DM_WINDMILL_VELOCITY_RADPS);
+              CONFIG_DM_WINDMILL_LOAD_VELOCITY_RADPS);
         }
         // 第一次发射不需要控制装填机构，直接返回等待下一次发射指令
         if (launch_step_this_cycle == 0) {
@@ -1231,7 +1233,7 @@ class ActionMatch_Enter : public OpenFSMAction {
     NewLoadServorUp();
     motor::MotorWindmill.setposDeg(kWindmillStepDeg[0],
                                       CONFIG_DM_WINDMILL_ENTERMATCH_VELOCITY_RADPS);
-    //pneumatic::main_air_pump.on();在调试模式下手动安装，之后气泵一直保持打开
+    pneumatic::main_air_pump.on();//在调试模式下手动安装，之后气泵一直保持打开
     // setSlidedownServotoCut();
 
     fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
@@ -1312,6 +1314,7 @@ class ActionMatch_Wait : public OpenFSMAction {
       if (msgDartStatus.dart_launch_process >= 2)
         fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
       soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_winxp));
+     // pneumatic::main_air_pump.on();
       fsm.nextAction();
       return;
     }

@@ -11,10 +11,10 @@
             "device": "STM32F427IIHx",
             "preLaunchTask": "CMake: Build",
             "runToEntryPoint": "main",
-            "serverpath": "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/bin/openocd.exe",
-            "gdbPath": "T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+            "serverpath": "D:/DevEnv/Debuggers/OpenOCD/bin/openocd.exe",
+            "gdbPath": "D:/DevEnv/Compilers/ARM-GCC/bin/arm-none-eabi-gdb.exe",
             "searchDir": [
-                "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/openocd/scripts"
+                "D:/DevEnv/Debuggers/OpenOCD/share/openocd/scripts"
             ],
             "configFiles": [
                 "${workspaceFolder}/stlink.cfg"
@@ -34,10 +34,10 @@
             "executable": "${workspaceFolder}/build/dart_mcu.elf",
             "device": "STM32F427IIHx",
             "runToEntryPoint": "main",
-            "serverpath": "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/bin/openocd.exe",
-            "gdbPath": "T:/SDK/STM32CubeCLT_1.20.0/GNU-tools-for-STM32/bin/arm-none-eabi-gdb.exe",
+            "serverpath": "D:/DevEnv/Debuggers/OpenOCD/bin/openocd.exe",
+            "gdbPath": "D:/DevEnv/Compilers/ARM-GCC/bin/arm-none-eabi-gdb.exe",
             "searchDir": [
-                "T:/SDK/OPENOCD/xpack-openocd-0.12.0-7/openocd/scripts"
+                "D:/DevEnv/Debuggers/OpenOCD/share/openocd/scripts"
             ],
             "configFiles": [
                 "${workspaceFolder}/stlink.cfg"
