@@ -764,10 +764,9 @@ public:
         }
         motor::MotorLift.setpos(temp_angle_rad, CONFIG_DM_LIFT_VELOCITY_RADPS);
 
-        //ch0控制电机
-        // 三档离散：0/1/2 -> -60/30/120
-        // 左拨：2->1, 1->0；右拨：0->1, 1->2；中间保持
-        static int state_ch0 = 2;     // 0:-180, 1:-90, 2:0, 3:90
+        //ch0控制风车电机：四档切换 kWindmillStepDeg[0]/[1]/[2]/[3]
+        // 左拨：递减；右拨：递增；左左：直接归[0]；拨动逻辑保持原版
+        static int state_ch0 = 0;     // 0:[0], 1:[1], 2:[2], 3:[3]
         static int last_ch0_zone = 0; // -2:左左, -1:左, 0:中, 1:右
         int ch0_zone = 0;
 
@@ -781,7 +780,7 @@ public:
 
         if (ch0_zone != last_ch0_zone) {
           if (ch0_zone == -2) {
-            state_ch0 = 0; // 直接到 -180
+            state_ch0 = 0; // 直接到 kWindmillStepDeg[0]
           } else if (ch0_zone == -1 && state_ch0 > 0) {
             state_ch0--; // 左移一档
           } else if (ch0_zone == 1 && state_ch0 < 3) {
@@ -1010,20 +1009,27 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
       soundEffectManager.clearSoundEffects();   // 关键：先打断旧音乐
-      static int launch_time =1; // 下一次发射的步号:1->2->3 循环
-      static int launch_step_this_cycle = 1; // 本轮装填/关阀使用的步号快照
+      static int launch_time = 0; // 下一次发射的步号:0->1->2->3 循环
+      static int launch_step_this_cycle = 0; // 本轮装填/关阀使用的步号快照
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0://确定进入
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
             NewLoadServorUp();
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =1;
+          
+        if(launch_step_this_cycle == 0){
+          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =8;
+          launch_time = (launch_time + 1) % 4;
+          launch_step_this_cycle = launch_time;
+        }
         }
         break;
       case 1:
         // 滑台下降，等待到位
         //   装填电机向下运动到装填位置（的后方）
         //  速度不用改，位子也许要改
+
         base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
         if ((motor_controller::MotorLoadController[0]
                      .current_angle_with_rounds_ >=
@@ -1042,10 +1048,6 @@ public:
               kWindmillStepDeg[launch_step_this_cycle],
               CONFIG_DM_WINDMILL_LOAD_VELOCITY_RADPS);
         }
-        // 第一次发射不需要控制装填机构，直接返回等待下一次发射指令
-        if (launch_step_this_cycle == 0) {
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 6;
-        }
         launch_time = (launch_time + 1) % 4;
       fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =3; // 下一个状态
       fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
@@ -1056,13 +1058,9 @@ public:
         float err=abs(motor::MotorWindmill.info_.current_angle_with_circle_- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
          //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
         // 降下升降机并等待时间到达
-        if(err < 5.0f){
+        if(err < 0.5f){
           //pitch下来 
           NewLoadServorDown();
-        }
-        if (xTaskGetTickCount() -
-                fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
-            pdMS_TO_TICKS(CONFIG_PITCH_WIND)) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
         }
         break;
@@ -1101,7 +1099,6 @@ public:
       case 7:
           //风车pitch运动
         NewLoadServorUp();
-
         //装填完毕，准备发射
         // 等待Wheel复位
         //这个滚轮条件是什么，还可以在这里等待吗
@@ -1375,7 +1372,7 @@ class ActionMatch_Wait : public OpenFSMAction {
     uint8_t dart_remaining_time = ext_dart_info.dart_remaining_time;
     uint16_t dart_info = ext_dart_info.dart_info;
     state_machine::E_Target_Type target_type;
-    target_type = static_cast<E_Target_Type>((dart_info >> 8) & 0x03);
+    target_type = static_cast<E_Target_Type>((dart_info >> 6) & 0x03);
 #ifndef CONFIG_SIMULATE_DART_LAUNCH_OPENING_STATUS
     uint8_t dart_launch_opening_status =
         ext_dart_client_cmd.dart_launch_opening_status;
@@ -1572,7 +1569,7 @@ class ActionMatch_Launch : public OpenFSMAction {
     // 基地随机移动目标
     uint16_t dart_info = ext_dart_info.dart_info;
     state_machine::E_Target_Type target_type;
-    target_type = static_cast<E_Target_Type>((dart_info >> 8) & 0x03);
+    target_type = static_cast<E_Target_Type>((dart_info >> 6) & 0x03);
 
     if (!fsm.custom<Dart_FSM>()->ActionRemoteandMatch_launch_complete_)
       last_launch_time_ = msgDartStatus.last_launch_time;
@@ -1878,7 +1875,7 @@ class ActionMatch_Reload : public OpenFSMAction {
     uint8_t dart_remaining_time = ext_dart_info.dart_remaining_time;
     uint16_t dart_info = ext_dart_info.dart_info;
     state_machine::E_Target_Type target_type;
-    target_type = static_cast<E_Target_Type>((dart_info >> 8) & 0x03);
+    target_type = static_cast<E_Target_Type>((dart_info >> 6) & 0x03);
 #ifndef CONFIG_SIMULATE_DART_LAUNCH_OPENING_STATUS
     uint8_t dart_launch_opening_status =
         ext_dart_client_cmd.dart_launch_opening_status;

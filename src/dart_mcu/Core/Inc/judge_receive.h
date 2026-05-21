@@ -71,7 +71,7 @@ Version:2024.01.22
 #define POWER_HEAT_DATA_SIZE (16)              // 0X0202
 #define ROBOT_POS_DATA_SIZE (12)               // 0X0203
 #define BUFF_SIZE (6)                          // 0X0204
-#define AIR_SUPPORTDATA_DATA_SIZE (1)          // 0X0205
+#define AIR_SUPPORTDATA_DATA_SIZE (2)          // 0X0205 (airforce_status + time_remain)
 #define ROBOT_HURT_DATA_SIZE (1)               // 0X0206
 #define SHOOTDATA_DATA_SIZE (7)                // 0X0207
 #define PROJECTILE_ALLOWANCE_DATA_SIZE (6)     // 0X0208
@@ -81,7 +81,7 @@ Version:2024.01.22
 #define RADAR_MARK_DATA_SIZE (6)               // 0X020C
 #define SENTRY_INFO_DATA_SIZE (4)              // 0X020D
 #define RADAR_INFO_DATA_SIZE (1)               // 0X020E
-#define ROBOT_INTERACTIONDATA_DATA_SIZE (118)  // 0X0301
+#define ROBOT_INTERACTIONDATA_DATA_SIZE (119)  // 0X0301 (2+2+2+113)
 // 0X0301子内容长度：
 #define INTERACTION_LAYER_DELETE_DATA_SIZE (2) // 0X0100
 #define INTERACTION_FIGURE_DATA_SIZE (15)      // 0X0101
@@ -96,8 +96,8 @@ Version:2024.01.22
 #define MAP_COMMAND_DATA_SIZE (11)  // 0X0303
 #define REMOTE_CONTROL_DATA_SIZE (12)   // 0X0304
 #define MAP_ROBOT_DATA_SIZE (10)        // 0X0305
-#define CUSTOM_CLIENTDATA _DATA_SIZE(8) // 0X0306
-#define MAP_DATA_DATA_SIZE (103)        // 0X0307
+#define CUSTOM_CLIENT_DATA_SIZE (8)     // 0X0306
+#define MAP_DATA_DATA_SIZE (105)        // 0X0307 (1+2+2+49+49+2)
 #define CUSTOM_INFO_DATA_SIZE (34)      // 0X0308
 
 #define INTERACTIVEHEADER_DATA_SIZE(n) (n + 9)
