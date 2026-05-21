@@ -33,7 +33,7 @@ namespace state_machine {
 constexpr float kPi = 3.14159265358979323846f;
 constexpr float kDegToRad = kPi / 180.0f;
 constexpr float kRadToDeg = 180.0f / kPi;
-constexpr float kWindmillStepDeg[4] = {180.0f, 90.85f, 2.02f, -88.40f};
+constexpr float kWindmillStepDeg[4] = {179.762f, 91.679f, 1.082f, -88.794f};
 
 #define anyMotorDisconnected                                                   \
   (motor::MotorYawLS.motor_state_ == motor::E_MotorState::DISCONNECTED ||      \
@@ -689,6 +689,9 @@ bool updateAutoAim(dart_msgs__msg__DartLauncherParams &msgDartParams_,
 }
 // (removed redundant DM_fixed_position helper)
 // 调试模式，右拨中，改这里
+
+int launch_time = 0; // 下一次发射的步号:0->1->2->3 循环
+int launch_step_this_cycle = 0; // 本轮装填/关阀使用的步号快照
 class ActionRemote : public OpenFSMAction {
 public:
   void enter(OpenFSM &fsm) const override {
@@ -729,7 +732,6 @@ public:
 
     soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_dji_startup));
   }
-
   void update(OpenFSM &fsm) const override {
     setNextStateByRemote();
     // 遥控状态
@@ -1009,20 +1011,20 @@ public:
         fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reset_State = 0;
       }
       soundEffectManager.clearSoundEffects();   // 关键：先打断旧音乐
-      static int launch_time = 0; // 下一次发射的步号:0->1->2->3 循环
-      static int launch_step_this_cycle = 0; // 本轮装填/关阀使用的步号快照
+
+      float err;
       // 升降机控制 //自动装填控制,在case0判断进入，拨轮旋转
       switch (fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State) {
       case 0://确定进入
         if (RC_Data.ch4_wheel >= 1622 && RC_Data.Switch_Left == RC_SW_MID) {
-            NewLoadServorUp();
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =1;
+        NewLoadServorUp();
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =1;
           
-        if(launch_step_this_cycle == 0){
+        if(launch_time == 0)
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =8;
-          launch_time = (launch_time + 1) % 4;
+          
           launch_step_this_cycle = launch_time;
-        }
+          launch_time = (launch_time + 1) % 4;
         }
         break;
       case 1:
@@ -1041,43 +1043,41 @@ public:
         }
         break;
       case 2:
-        launch_step_this_cycle = launch_time;
+        
         // 处理风车位子，即转盘前进一个格子
-        if (launch_step_this_cycle >= 0 && launch_step_this_cycle < 4) {
-          motor::MotorWindmill.setposDeg(
+        motor::MotorWindmill.setposDeg(
               kWindmillStepDeg[launch_step_this_cycle],
               CONFIG_DM_WINDMILL_LOAD_VELOCITY_RADPS);
-        }
-        launch_time = (launch_time + 1) % 4;
-      fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =3; // 下一个状态
-      fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ = xTaskGetTickCount();
-
+        
+        
+        err=abs(motor::MotorWindmill.info_.current_angle_with_circle_- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
+         //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
+        // 降下升降机并等待闭环
+      if(err < 0.5f)
+        fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =3; // 下一个状态
       break;
       case 3:
       {
-        float err=abs(motor::MotorWindmill.info_.current_angle_with_circle_- motor::MotorWindmill.target_pos_rad * kRadToDeg) ;
-         //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
-        // 降下升降机并等待时间到达
-        if(err < 0.5f){
           //pitch下来 
           NewLoadServorDown();
+          err=abs(motor::MotorLift.info_.current_angle_with_circle_- motor::MotorLift.target_pos_rad * kRadToDeg) ;
+         //判断风车是否到位，范围可以大一点，毕竟有时候会抖动
+          if(err < 0.5f)
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 4;
-        }
         break;
       }
       case 4:
-        base_velocity = -(CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD);
-        // 装填电机向上运动到发射位置
-        //新版本变为向上运动到吸盘位子
-        if (motor_controller::MotorLoadController[0]
-                    .current_angle_with_rounds_ <=
-                CONFIG_MOTOR_LOAD_ANGLE_WIND |
-            motor_controller::MotorLoadController[1]
-                    .current_angle_with_rounds_ <=
-                CONFIG_MOTOR_LOAD_ANGLE_WIND) {
-          fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
-          setLoadServotoUP();
-        }
+          base_velocity = -(CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD);
+          // 装填电机向上运动到发射位置
+          //新版本变为向上运动到吸盘位子
+          if (motor_controller::MotorLoadController[0]
+                      .current_angle_with_rounds_ <=
+                  CONFIG_MOTOR_LOAD_ANGLE_WIND |
+              motor_controller::MotorLoadController[1]
+                      .current_angle_with_rounds_ <=
+                  CONFIG_MOTOR_LOAD_ANGLE_WIND) {
+            fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 5;
+          }
         break;
       case 5:
       //关闭对应的气闸门
@@ -1102,9 +1102,16 @@ public:
         //装填完毕，准备发射
         // 等待Wheel复位
         //这个滚轮条件是什么，还可以在这里等待吗
+        fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_=xTaskGetTickCount();
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 8;
        break;
        case 8:
+         if (xTaskGetTickCount() -
+                fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
+            pdMS_TO_TICKS(CONFIG_PITCH_WIND)) {
+          
+
+
        base_velocity = CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
         if ((motor_controller::MotorLoadController[0]
                      .current_angle_with_rounds_ >=
@@ -1113,6 +1120,7 @@ public:
                      .current_angle_with_rounds_ >=
                  CONFIG_MOTOR_LOAD_ANGLE_LAUNCH_DOWN)) {
           fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State =9; }// 下一个状态
+                 }
           break;
         case 9:
          base_velocity = -CONFIG_MOTOR_LOAD_OPERATION_VELOCITY_DOWNWARD;
