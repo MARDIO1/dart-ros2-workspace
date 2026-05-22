@@ -85,7 +85,9 @@ int main(void)
     /* Reset of all peripherals, Initializes the Flash interface and the
      * Systick. */
 
-    HAL_Init();
+
+
+     HAL_Init();
 
     /* USER CODE BEGIN Init */
     RCC_OscInitTypeDef RCC_OscInitStruct = {0};

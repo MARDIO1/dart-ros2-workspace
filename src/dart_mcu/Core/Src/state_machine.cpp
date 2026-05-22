@@ -1254,10 +1254,10 @@ class ActionMatch_Enter : public OpenFSMAction {
     NewLoadServorUp();
     motor::MotorWindmill.setposDeg(kWindmillStepDeg[0],
                                       CONFIG_DM_WINDMILL_ENTERMATCH_VELOCITY_RADPS);
-    pneumatic::main_air_pump.on();//在调试模式下手动安装，之后气泵一直保持打开
-    for(int i=0;i<2;i++){
-        pneumatic::main_solenoid[i].on();
-    }
+    // pneumatic::main_air_pump.on();//在调试模式下手动安装，之后气泵一直保持打开
+    // for(int i=0;i<2;i++){
+    //     pneumatic::main_solenoid[i].on();
+    // }
     // setSlidedownServotoCut();
 
     fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
