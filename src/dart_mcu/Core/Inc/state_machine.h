@@ -46,6 +46,33 @@ struct FSM {
 
 struct Dart_FSM : public FSM {
   bool boot_success = false;
+  uint8_t dbg_dart_info_raw_0 = 0;
+  uint8_t dbg_dart_info_raw_1 = 0;
+  uint8_t dbg_dart_info_raw_2 = 0;
+
+  // 开闸后的流程打点：1=OPERATING边沿, 2=OPENED边沿, 3=发射授权,
+  // 4=进入发射, 5=发射结束转装填, 6=装填结束回等待
+  bool bool1 = false;
+  bool bool2 = false;
+  bool bool3 = false;
+  bool bool4 = false;
+  bool bool5 = false;
+  bool bool6 = false;
+
+  bool dbg_clear_flow_in_protect = false;
+  bool dbg_clear_flow_in_remote = false;
+  bool dbg_clear_flow_in_match_exit = false;
+  bool dbg_clear_launch_grant_by_reject = false;
+  bool dbg_clear_cont_fire_by_reject = false;
+  bool dbg_clear_cont_fire_by_skip = false;
+  bool dbg_clear_pre_launch_by_launch = false;
+  bool dbg_clear_pre_launch_by_wait_exit = false;
+  bool dbg_clear_pre_launch_by_match_exit = false;
+  bool dbg_reject_by_stage_time = false;
+  bool dbg_reject_by_preparation = false;
+  bool dbg_reject_by_rc_offline = false;
+  bool dbg_reject_by_stage_remain_time = false;
+  bool dbg_reject_by_dart_remaining_time = false;
 
   // ActionResetMotors
   uint8_t ActionResetMotors_Load_0_Reset_State = 0;

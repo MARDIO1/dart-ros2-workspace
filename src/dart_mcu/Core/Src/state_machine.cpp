@@ -575,6 +575,13 @@ public:
   void enter(OpenFSM &fsm) const override {
     // 保护状态
     soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_autopilot_disconnect));
+    fsm.custom<Dart_FSM>()->dbg_clear_flow_in_protect = true;
+    fsm.custom<Dart_FSM>()->bool1 = false;
+    fsm.custom<Dart_FSM>()->bool2 = false;
+    fsm.custom<Dart_FSM>()->bool3 = false;
+    fsm.custom<Dart_FSM>()->bool4 = false;
+    fsm.custom<Dart_FSM>()->bool5 = false;
+    fsm.custom<Dart_FSM>()->bool6 = false;
     // 关闭激光器
     CloseFan();
     
@@ -718,6 +725,7 @@ public:
         motor_controller::E_PID_Velocity_Angle_Controller_State::ANGLE_CONTROL);
 
     // 重置状态变量
+    fsm.custom<Dart_FSM>()->dbg_clear_flow_in_remote = true;
     fsm.custom<Dart_FSM>()->ActionRemote_MotorLoad_State = 0;
     fsm.custom<Dart_FSM>()->launch_operating_ = false;
     fsm.custom<Dart_FSM>()->ActionRemoteandReload_Reload_State = 0;
@@ -1327,6 +1335,7 @@ class ActionMatch_Wait : public OpenFSMAction {
     // 判断是否一路skip
     if (msgDartStatus.dart_launch_process >
         msgDartProtocols.dart_launch_process_offset_end) {
+      fsm.custom<Dart_FSM>()->dbg_clear_cont_fire_by_skip = true;
       fsm.nextAction();
       return;
     }
@@ -1335,6 +1344,7 @@ class ActionMatch_Wait : public OpenFSMAction {
     // 判断是否连续发射，如果是的话就跳过该action
     if (fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire &&
         game_progress == 4) {
+      fsm.custom<Dart_FSM>()->dbg_clear_cont_fire_by_skip = true;
       if (msgDartStatus.dart_launch_process >= 2)
         fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
       soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_winxp));
@@ -1422,10 +1432,12 @@ class ActionMatch_Wait : public OpenFSMAction {
     if (RC_Data.Switch_Left != RC_SW_UP) {
 #endif
       // 发射信号一：裁判系统飞镖闸门从“正在运动”达到“完全开启”信号，同时比赛正常进行中
-      launch_grant_ |=
-          (last_dart_launch_opening_status_ == E_Gate_State::OPERATING &&
-           dart_launch_opening_status == E_Gate_State::OPENED &&
-           game_progress == 4);
+      if (last_dart_launch_opening_status_ == E_Gate_State::OPERATING &&
+          dart_launch_opening_status == E_Gate_State::OPENED &&
+          game_progress == 4) {
+        fsm.custom<Dart_FSM>()->bool2 = true;
+        launch_grant_ = true;
+      }
 
       // 发射信号二：飞镖发射剩余时间变化，时间落在20s内，而且比赛进行中
       launch_grant_ |= (dart_remaining_time > 2 && dart_remaining_time <= 20 &&
@@ -1441,17 +1453,21 @@ class ActionMatch_Wait : public OpenFSMAction {
       }
 
       // 预发射信号一：裁判系统飞镖发射站从“完全关闭”到“正在开启”中
-      pre_launch_grant |=
-          (last_dart_launch_opening_status_ == E_Gate_State::CLOSED &&
-           dart_launch_opening_status == E_Gate_State::OPERATING &&
-           game_progress == 4);
+      if (last_dart_launch_opening_status_ == E_Gate_State::CLOSED &&
+          dart_launch_opening_status == E_Gate_State::OPERATING &&
+          game_progress == 4) {
+        fsm.custom<Dart_FSM>()->bool1 = true;
+        pre_launch_grant = true;
+      }
 #ifndef CONFIG_SIMULATE_DART_LAUNCH_OPENING_STATUS
     }
 #endif
 
     // 自动信号触发时均要求连发
-    if (launch_grant_)
+    if (launch_grant_) {
+      fsm.custom<Dart_FSM>()->bool3 = true;
       fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = true;
+    }
 
     // ===== 手动信号域 =====
     // 发射信号四：遥控器信号
@@ -1476,13 +1492,30 @@ class ActionMatch_Wait : public OpenFSMAction {
           match_flag_));
 
     // 拒绝发射：门控、比赛时间不足\准备阶段\自检时\自瞄进行中
-    if (((((ext_game_status.stage_remain_time < 4 || dart_remaining_time < 3) &&
-           game_progress == 4) ||
-          game_progress == 1 || game_progress == 2 || game_progress == 3 ||
-          game_progress == 5) ||
-         msgDartStatus.rc_online == 0) &&
-        match_flag_) {
+    bool reject_by_stage_remain_time =
+        match_flag_ && game_progress == 4 && ext_game_status.stage_remain_time < 4;
+    bool reject_by_dart_remaining_time =
+        match_flag_ && game_progress == 4 && dart_remaining_time < 3;
+    bool reject_by_preparation =
+        match_flag_ && (game_progress == 1 || game_progress == 2 ||
+                        game_progress == 3 || game_progress == 5);
+    bool reject_by_rc_offline = match_flag_ && msgDartStatus.rc_online == 0;
+
+    if (reject_by_stage_remain_time || reject_by_dart_remaining_time ||
+        reject_by_preparation || reject_by_rc_offline) {
       launch_grant_ = false;
+      fsm.custom<Dart_FSM>()->dbg_clear_launch_grant_by_reject = true;
+      fsm.custom<Dart_FSM>()->dbg_clear_cont_fire_by_reject = true;
+      if (reject_by_stage_remain_time)
+        fsm.custom<Dart_FSM>()->dbg_reject_by_stage_remain_time = true;
+      if (reject_by_dart_remaining_time)
+        fsm.custom<Dart_FSM>()->dbg_reject_by_dart_remaining_time = true;
+      if (reject_by_stage_remain_time || reject_by_dart_remaining_time)
+        fsm.custom<Dart_FSM>()->dbg_reject_by_stage_time = true;
+      if (reject_by_preparation)
+        fsm.custom<Dart_FSM>()->dbg_reject_by_preparation = true;
+      if (reject_by_rc_offline)
+        fsm.custom<Dart_FSM>()->dbg_reject_by_rc_offline = true;
       fsm.custom<Dart_FSM>()->ActionMatch_Wait_Continuous_Fire = false;
     }
 
@@ -1511,7 +1544,9 @@ class ActionMatch_Wait : public OpenFSMAction {
     }
 
     if (launch_grant_) {
+      fsm.custom<Dart_FSM>()->dbg_clear_pre_launch_by_launch = true;
       pre_launch_grant = false;
+      fsm.custom<Dart_FSM>()->bool4 = true;
       fsm.nextAction();
     }
 
@@ -1527,6 +1562,7 @@ class ActionMatch_Wait : public OpenFSMAction {
 
   void exit(OpenFSM &fsm) const override {
     soundEffectManager.clearSoundEffects();
+    fsm.custom<Dart_FSM>()->dbg_clear_pre_launch_by_wait_exit = true;
     pre_launch_grant = false;
   }
 };
@@ -1535,6 +1571,7 @@ class ActionMatch_Launch : public OpenFSMAction {
   void enter(OpenFSM &fsm) const override {
     // 判断是否一路skip
     OpenFan();
+    fsm.custom<Dart_FSM>()->bool4 = true;
     if (msgDartStatus.dart_launch_process >
         msgDartProtocols.dart_launch_process_offset_end) {
       fsm.nextAction();
@@ -1671,6 +1708,7 @@ class ActionMatch_Launch : public OpenFSMAction {
       // 扳机丝杆扣下后等待
       setTriggerServotoTrigger();
       fsm.custom<Dart_FSM>()->ActionRemoteandMatch_launch_complete_ = true;
+        fsm.custom<Dart_FSM>()->bool5 = true;
       base_velocity = 0;
       if (xTaskGetTickCount() - fsm.custom<Dart_FSM>()->ActionGeneral_Timer0_ >
           pdMS_TO_TICKS(CONFIG_LAUNCH_WAIT_TIME)) {
@@ -1810,6 +1848,7 @@ void enter(OpenFSM &fsm) const override{
         break;
       case 6:
         NewLoadServorUp();
+        fsm.custom<Dart_FSM>()->bool6 = true;
         fsm.nextAction();
         break;
         default:
@@ -2066,6 +2105,14 @@ class ActionMatch_Exit : public OpenFSMAction {
   void enter(OpenFSM &fsm) const override {
     // 所有飞镖都已经打完，执行严格保护以防止空放，等待遥控模式解除此动作
     soundEffectManager.addSoundEffect(BUZZER_NOTE(buzzer_laoda));
+    fsm.custom<Dart_FSM>()->dbg_clear_flow_in_match_exit = true;
+    fsm.custom<Dart_FSM>()->dbg_clear_pre_launch_by_match_exit = true;
+    fsm.custom<Dart_FSM>()->bool1 = false;
+    fsm.custom<Dart_FSM>()->bool2 = false;
+    fsm.custom<Dart_FSM>()->bool3 = false;
+    fsm.custom<Dart_FSM>()->bool4 = false;
+    fsm.custom<Dart_FSM>()->bool5 = false;
+    fsm.custom<Dart_FSM>()->bool6 = false;
     msgDartStatus.dart_state = dart_fsm.openFSM_.focusEState() + 4;
   }
 

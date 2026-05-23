@@ -2,6 +2,7 @@
 #include "judge_receive.h"
 #include "string.h"
 #include "usart.h"
+#include "state_machine.h"
 /*
 quu..__
  $$$b  `---.__
@@ -275,6 +276,11 @@ void Referee_Receive_Data_Processing(uint8_t SOF, uint16_t CmdID,
             {
                 if (DART_INFO_DATA_SIZE <= max_data_size)
                 {
+                    state_machine::dart_fsm.dbg_dart_info_raw_0 = data_ptr[0];
+                    state_machine::dart_fsm.dbg_dart_info_raw_1 = data_ptr[1];
+                    state_machine::dart_fsm.dbg_dart_info_raw_2 = data_ptr[2];
+                    dart_mcu_log("DART_INFO raw: %u %u %u", data_ptr[0],
+                                 data_ptr[1], data_ptr[2]);
                     memcpy(&ext_dart_info, data_ptr, DART_INFO_DATA_SIZE);
                 }
                 break;
